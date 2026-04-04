@@ -69,6 +69,23 @@ main {
   padding-top: 56px;
 }
 
+/* Animación para el badge del carrito */
+@keyframes orange-ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(255, 152, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+  }
+}
+
+.badge-pulse {
+  animation: orange-ripple 2s ease-out infinite;
+}
+
 /* Estilos personalizados para el catálogo de productos */
 .product-card {
   transition: all 0.3s ease;

@@ -1,0 +1,94 @@
+/* Animación para el badge del carrito */
+@keyframes orange-ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 5px rgba(255, 152, 0, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+  }
+}
+
+.badge-pulse {
+  animation: orange-ripple 2s ease-out infinite;
+}
+
+/* Estilos para los dropdowns */
+.dropdown-menu {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  min-width: 200px;
+}
+
+.dropdown-menu.show {
+  display: block !important;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: #0d6efd;
+  background-color: #e9ecef;
+}
+
+.dropdown-divider {
+  height: 0;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  border-top: 1px solid #dee2e6;
+}
+
+.dropdown-header {
+  display: block;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+/* Estilos para la barra superior */
+.navbar-top-links {
+  list-style: none;
+}
+
+.navbar-top-links li {
+  list-style: none;
+}
+
+.navbar-right {
+  margin-left: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar-brand span:last-child {
+    display: none;
+  }
+
+  .btn-light span {
+    display: none;
+  }
+}

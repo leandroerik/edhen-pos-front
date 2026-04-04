@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { LayoutProvider } from './context/LayoutContext';
+import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import Sales from './components/Sales';
@@ -14,8 +15,9 @@ import MainContent from './components/Layout/MainContent';
 function App() {
   return (
     <Router>
-      <LayoutProvider>
-        <Navbar />
+      <AuthProvider>
+        <LayoutProvider>
+          <Navbar />
         <MainContent>
           <Toaster
             position="top-right"
@@ -91,6 +93,7 @@ function App() {
           </main>
         </MainContent>
       </LayoutProvider>
+      </AuthProvider>
     </Router>
   );
 }
