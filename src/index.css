@@ -1,13 +1,380 @@
-body {
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Estilos globales para layout fixed */
+html, body, #root {
+  height: 100%;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  overflow-y: auto;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Estilos para navbar y sidebar fixed */
+.navbar.fixed-top {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1030 !important;
+  width: 100% !important;
+  height: 56px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+aside {
+  position: fixed !important;
+  top: 56px !important;
+  left: 0 !important;
+  z-index: 1020 !important;
+  height: calc(100vh - 56px) !important;
+}
+
+/* Main content área */
+main {
+  position: relative;
+  padding-top: 56px;
+}
+
+/* Estilos personalizados para el catálogo de productos */
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.125);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #0d6efd;
+}
+
+.hover-overlay {
+  background: rgba(255,255,255,0.9);
+  transition: opacity 0.3s ease;
+}
+
+.product-card:hover .hover-overlay {
+  opacity: 1 !important;
+}
+
+/* Animaciones suaves para los badges */
+.badge {
+  transition: all 0.2s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Estilos para el TPV */
+.product-card-tpv {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.125);
+  cursor: pointer;
+}
+
+.product-card-tpv:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border-color: #0d6efd;
+}
+
+.product-card-tpv .card-body {
+  padding: 1rem;
+}
+
+/* Estilos para el carrito */
+.cart-item {
+  transition: all 0.2s ease;
+}
+
+.cart-item:hover {
+  background-color: rgba(0,123,255,0.05);
+}
+
+/* Animación para el total */
+.total-amount {
+  font-weight: bold;
+  color: #28a745;
+  font-size: 1.5rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Estilos para botones del TPV */
+.btn-tpv-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-tpv-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,123,255,0.4);
+}
+
+.btn-tpv-success {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(40,167,69,0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-tpv-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40,167,69,0.4);
+}
+
+/* Estilos para el sidebar sticky */
+.sticky-top {
+  top: 20px !important;
+}
+
+/* Responsive para TPV */
+@media (max-width: 768px) {
+  .product-card-tpv .card-body {
+    padding: 0.75rem;
+  }
+
+  .product-card-tpv h6 {
+    font-size: 0.9rem;
+  }
+
+  .sticky-top {
+    position: static !important;
+  }
+}
+
+/* Estilos para el sidebar UL/LI */
+#side-menu {
+  list-style: none;
+  padding: 0.5rem 0;
+  margin: 0;
+  width: 100%;
+}
+
+#side-menu li {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+#side-menu li a,
+#side-menu li button {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: #ccc;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+#side-menu li a:hover,
+#side-menu li button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding-left: 1.2rem;
+}
+
+#side-menu li.active > a,
+#side-menu li.active > button {
+  background-color: rgba(13, 110, 253, 0.15);
+  color: #0d6efd;
+  border-left: 3px solid #0d6efd;
+  padding-left: 0.7rem;
+  font-weight: 600;
+}
+
+/* Iconos */
+#side-menu i.fa-fw {
+  width: 1.25em;
+  text-align: center;
+}
+
+/* Arrow para submenús */
+#side-menu .arrow {
+  float: right;
+  font-size: 0.75rem;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+/* Submenu level 2 */
+#side-menu .nav-second-level {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+#side-menu .nav-second-level li {
+  display: block;
+  padding: 0;
+}
+
+#side-menu .nav-second-level li a {
+  padding: 0.5rem 1rem 0.5rem 3rem;
+  font-size: 0.9rem;
+  color: #999;
+  border-left: 3px solid transparent;
+}
+
+#side-menu .nav-second-level li a:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ccc;
+  padding-left: 3.2rem;
+}
+
+#side-menu .nav-second-level li.active > a {
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  border-left: 3px solid #0d6efd;
+  padding-left: 2.7rem;
+  font-weight: 600;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 1000px;
+    overflow: visible;
+  }
+}
+
+/* Collapse/Expand animations */
+.nav.collapse {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.nav-second-level.collapse {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.nav-second-level.collapse.in {
+  max-height: 1000px;
+  overflow: visible;
+  animation: slideDown 0.3s ease-out;
+}
+
+.nav-third-level.collapse {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.nav-third-level.collapse.in {
+  max-height: 1000px;
+  overflow: visible;
+}
+
+/* Sidebar menu toggle button */
+.sidebar-menu-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.sidebar-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.sidebar-menu-toggle[aria-expanded="true"] {
+  background-color: rgba(13, 110, 253, 0.15);
+  color: #0d6efd;
+}
+
+.sidebar-link {
+  display: flex !important;
+  align-items: center !important;
+  padding: 0.75rem 1rem !important;
+  color: #ccc !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  font-size: 0.95rem !important;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  padding-left: 1.2rem !important;
+}
+
+/* Estilos para las tarjetas de variantes */
+.card.border {
+  transition: all 0.2s ease;
+}
+
+.card.border:hover {
+  border-color: #0d6efd !important;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .product-card:hover {
+    transform: none;
+  }
+
+  .hover-overlay {
+    opacity: 1 !important;
+    background: rgba(255,255,255,0.95);
+  }
 }

@@ -1,8 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders navbar with Edhen POS title', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const titleElement = screen.getByText(/Edhen POS/i);
+  expect(titleElement).toBeInTheDocument();
+});
+
+test('renders navigation links', () => {
+  render(<App />);
+  expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+  expect(screen.getByText(/Sales/i)).toBeInTheDocument();
+  expect(screen.getByText(/Clients/i)).toBeInTheDocument();
+  expect(screen.getByText(/Products/i)).toBeInTheDocument();
+  expect(screen.getByText(/Reports/i)).toBeInTheDocument();
 });
