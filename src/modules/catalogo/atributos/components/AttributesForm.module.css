@@ -1,0 +1,6 @@
+/* Estilos complementarios para AttributesForm (Tailwind principal) */
+/* Estos estilos pueden ser eliminados cuando se migre completamente a Tailwind */
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';

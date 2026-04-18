@@ -3,14 +3,32 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { LayoutProvider } from './context/LayoutContext';
 import { AuthProvider } from './context/AuthContext';
-import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import Sales from './components/Sales';
-import Clients from './components/Clients';
-import Products from './components/Products';
-import Reports from './components/Reports';
-import TPVTienda from './components/TPVTienda';
-import MainContent from './components/Layout/MainContent';
+
+// Shared components
+import Navbar from './shared/components/Navbar';
+import MainContent from './shared/components/Layout/MainContent';
+
+// Módulos - Dashboard
+import Dashboard from './modules/dashboard';
+
+// Módulos - Catálogo
+import Catalogo from './modules/catalogo';
+import CategoriesPage from './modules/catalogo/categorias';
+import ProductsPage from './modules/catalogo/productos';
+import AttributesPage from './modules/catalogo/atributos';
+import OffersPage from './modules/catalogo/ofertas';
+
+// Módulos - Clientes
+import Clientes from './modules/clientes';
+
+// Módulos - Ventas
+import VentasTienda from './modules/ventas/tienda';
+import VentasHistorial from './modules/ventas/historial';
+import VentasInternet from './modules/ventas/internet';
+import Devoluciones from './modules/ventas/devoluciones';
+
+// Módulos - Venta Online
+import VentaOnline from './modules/ventaOnline';
 
 function App() {
   return (
@@ -45,22 +63,28 @@ function App() {
           />
           <main className="p-4">
             <Routes>
-              {/* Panel de control */}
+              {/* Dashboard */}
               <Route path="/" element={<Dashboard />} />
 
               {/* Catálogo */}
-              <Route path="/categorias" element={<div className="container"><h1>Categorías</h1><p>Funcionalidad en desarrollo...</p></div>} />
-              <Route path="/productos" element={<Products />} />
-              <Route path="/ofertas" element={<div className="container"><h1>Ofertas</h1><p>Funcionalidad en desarrollo...</p></div>} />
+              <Route path="/catalogo" element={<Catalogo />} />
+              <Route path="/catalogo/categorias" element={<CategoriesPage />} />
+              <Route path="/catalogo/productos" element={<ProductsPage />} />
+              <Route path="/catalogo/atributos" element={<AttributesPage />} />
+              <Route path="/catalogo/ofertas" element={<OffersPage />} />
 
               {/* Ventas */}
-              <Route path="/ventas/tienda" element={<TPVTienda />} />
-              <Route path="/ventas/internet" element={<div className="container"><h1>Ventas en Internet</h1><p>Funcionalidad en desarrollo...</p></div>} />
-              <Route path="/devoluciones" element={<div className="container"><h1>Devoluciones</h1><p>Funcionalidad en desarrollo...</p></div>} />
+              <Route path="/ventas/tienda" element={<VentasTienda />} />
+              <Route path="/ventas/historial" element={<VentasHistorial />} />
+              <Route path="/ventas/internet" element={<VentasInternet />} />
+              <Route path="/devoluciones" element={<Devoluciones />} />
+
+              {/* Venta Online */}
+              <Route path="/venta-online/*" element={<VentaOnline />} />
 
               {/* Otras secciones principales */}
               <Route path="/cajas" element={<div className="container"><h1>Cajas</h1><p>Funcionalidad en desarrollo...</p></div>} />
-              <Route path="/clientes" element={<Clients />} />
+              <Route path="/clientes/*" element={<Clientes />} />
               <Route path="/vendedores" element={<div className="container"><h1>Vendedores</h1><p>Funcionalidad en desarrollo...</p></div>} />
 
               {/* Informes */}
@@ -85,10 +109,6 @@ function App() {
 
               {/* Cuenta Catinfog */}
               <Route path="/cuenta-catinfog" element={<div className="container"><h1>Cuenta Catinfog</h1><p>Funcionalidad en desarrollo...</p></div>} />
-
-              {/* Rutas legacy para compatibilidad */}
-              <Route path="/sales" element={<Sales />} />
-              <Route path="/reports" element={<Reports />} />
             </Routes>
           </main>
         </MainContent>

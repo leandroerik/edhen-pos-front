@@ -1,0 +1,27 @@
+/* TPV Online specific styles */
+
+.tpv-online-shipping-form {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+}
+
+.btn-generar-envio {
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  border: none;
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-generar-envio:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.shipping-status-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #fff3cd;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #856404;
+}

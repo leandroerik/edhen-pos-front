@@ -1,0 +1,93 @@
+/* AddressTable Module Styles */
+
+.addressTable {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.addressTable thead {
+  background-color: #f8f9fa;
+}
+
+.addressTable thead th {
+  border-bottom: 2px solid #dee2e6;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: #333;
+  vertical-align: middle;
+}
+
+.addressTable tbody tr {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.addressTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.addressTable tbody tr.table-info {
+  background-color: #d1ecf1;
+}
+
+.addressTable tbody tr.table-info:hover {
+  background-color: #bee5eb;
+}
+
+.addressTable tbody td {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.badge {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.btn-link {
+  color: #6c757d;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-link:hover {
+  color: #495057;
+}
+
+.btn-group-sm .btn {
+  padding: 0.375rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.text-muted {
+  color: #6c757d;
+}

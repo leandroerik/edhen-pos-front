@@ -1,0 +1,93 @@
+.tpv-page {
+  background-color: #f6f7fb;
+}
+
+.tpv-search-box .form-control,
+.tpv-search-box .input-group-text {
+  border-color: #ced4da;
+}
+
+.tpv-product-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tpv-product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.product-icon {
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+}
+
+.product-grid {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.tpv-cart-card {
+  min-height: 600px;
+  position: sticky;
+  top: 0;
+}
+
+.tpv-cart-items {
+  min-height: 220px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Estilos para tabs de categoría */
+.nav-tabs-sm .nav-link {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-tabs-sm .nav-link.active {
+  border-bottom-color: #fff;
+}
+
+.nav-tabs-sm {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 0;
+}
+
+@media (max-width: 1200px) {
+  .tpv-cart-card {
+    position: static;
+  }
+}
+
+@media (max-width: 991px) {
+  .tpv-cart-card {
+    min-height: auto;
+  }
+  
+  .product-grid {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 576px) {
+  .product-grid {
+    max-height: 300px;
+  }
+  
+  .tpv-search-box {
+    width: 100% !important;
+    margin-top: 0.5rem;
+  }
+}

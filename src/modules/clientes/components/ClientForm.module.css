@@ -1,0 +1,94 @@
+/* ClientForm Module Styles */
+
+.modal {
+  z-index: 1050;
+}
+
+.modal-content {
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 8px 8px 0 0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  border-radius: 0 0 8px 8px;
+}
+
+label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.form-control, 
+.form-select {
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, 
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #dc3545;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: #28a745;
+}
+
+.invalid-feedback,
+.valid-feedback {
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.invalid-feedback {
+  color: #dc3545;
+}
+
+.valid-feedback {
+  color: #28a745;
+}
+
+.alert {
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}
+
+button {
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+  transform: translateY(0);
+}

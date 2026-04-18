@@ -1,0 +1,28 @@
+.categoriesList {
+  padding: 0;
+}
+
+.categoryItem {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.categoryItem:hover {
+  background-color: #f8f9fa;
+}
+
+.categoryItem:last-child {
+  border-bottom: none;
+}
+
+.categoryName {
+  font-weight: 500;
+  color: #333;
+}
+
+.badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+}

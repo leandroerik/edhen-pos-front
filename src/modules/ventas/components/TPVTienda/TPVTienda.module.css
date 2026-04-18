@@ -1,0 +1,11 @@
+/* TPV Tienda (Physical Store) specific styles */
+
+.tpv-tienda-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #e7f3ff;
+  color: #0051ba;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
