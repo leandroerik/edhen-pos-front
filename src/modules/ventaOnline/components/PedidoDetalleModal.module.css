@@ -1,0 +1,29 @@
+.modalBody {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.cardHeader {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.75rem 1rem;
+}
+
+.cardHeader h6 {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+}
+
+.tableFoot {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.5em 0.75em;
+}
+
+.fs6 {
+  font-size: 1rem;
+}

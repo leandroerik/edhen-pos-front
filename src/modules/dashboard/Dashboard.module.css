@@ -1,53 +1,51 @@
 .panelContainer {
   padding: 1.5rem;
-  background-color: #f8f9fa;
+  background-color: #f5f6f8;
   min-height: 100vh;
 }
 
 .header {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e9ecef;
+}
+
+/* Cards globales */
+:global(.card) {
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+
+:global(.card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+}
+
+:global(.card-header) {
+  background: #ffffff;
   border-bottom: 1px solid #e9ecef;
-}
-
-.header h1 {
-  color: #212529;
+  padding: 0.85rem 1.1rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
 }
 
-.header .text-muted {
-  font-size: 0.95rem;
-}
-
-.statisticsRow {
-  gap: 1rem;
-}
-
-.statisticsRow > div {
-  display: flex;
-}
-
-.chartsRow {
-  gap: 1rem;
+:global(.card-body) {
+  padding: 1.1rem;
 }
 
 /* Responsive */
+@media (max-width: 1199px) {
+  .panelContainer { padding: 1.25rem; }
+}
+
 @media (max-width: 768px) {
-  .panelContainer {
-    padding: 1rem;
-  }
+  .panelContainer { padding: 1rem; }
+}
 
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header h1 {
-    margin-bottom: 1rem;
-  }
-
-  .statisticsRow > div {
-    margin-bottom: 1rem;
-  }
+@media (max-width: 576px) {
+  .panelContainer { padding: 0.75rem; }
 }

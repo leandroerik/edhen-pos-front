@@ -1,17 +1,7 @@
 import React, { memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import styles from './sidebar.module.css';
 
-/**
- * Submenu del sidebar
- * Renderiza un <li> con submenu colapsable usando estructura HTML original
- * Patrón acordeón: solo un submenu expandido a la vez
- * 
- * @param {Object} item - Configuración del item con submenu
- * @param {boolean} isCollapsed - Si el sidebar está colapsado
- * @param {boolean} isExpanded - Si este submenu está expandido
- * @param {function} onToggle - Callback para toggle del submenu
- * @param {function} isActive - Función para verificar si una ruta está activa
- */
 const SidebarSubmenu = memo(({
   item,
   isCollapsed,
@@ -20,91 +10,54 @@ const SidebarSubmenu = memo(({
   isActive
 }) => {
   const navigate = useNavigate();
+  const submenuId = `submenu-${item.id}`;
+  const buttonId = `menu-toggle-${item.id}`;
   const hasAnyActive = item.submenu?.some(sub => isActive(sub.path));
 
   const handleButtonClick = () => {
-    // Si está colapsado, navega a la primera opción del submenu
     if (isCollapsed && item.submenu && item.submenu.length > 0) {
       navigate(item.submenu[0].path);
     } else {
-      // Si no está colapsado, toggle del menú
       onToggle(item.id);
     }
   };
 
   return (
-    <li className={`${isExpanded ? 'active' : ''} ${hasAnyActive ? 'active' : ''}`}>
-      {/* Botón para expandir/contraer */}
+    <li className={`${styles['sidebar-item']} ${isExpanded || hasAnyActive ? styles['has-active'] : ''}`}>
       <button
+        id={buttonId}
         onClick={handleButtonClick}
-        className="sidebar-menu-toggle"
+        className={styles['sidebar-menu-toggle']}
         title={item.label}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          padding: '0.75rem 1rem',
-          border: 'none',
-          background: 'transparent',
-          color: '#ccc',
-          cursor: 'pointer',
-          textAlign: 'left',
-          transition: 'all 0.3s ease',
-          fontSize: '0.95rem'
-        }}
-        aria-expanded={isExpanded}
+        aria-expanded={isExpanded && !isCollapsed}
+        aria-controls={submenuId}
       >
-        <i 
-          className={`fa ${item.icon} fa-fw`} 
-          style={{marginRight: isCollapsed ? 0 : '0.5rem'}}
-        ></i>
+        <i className={`fa ${item.icon} fa-fw ${styles['sidebar-icon']}`}></i>
         {!isCollapsed && (
           <>
-            <span className="menu-label" style={{flex: 1}}>{item.label}</span>
-            <span className="fa arrow" style={{
-              transition: 'transform 0.3s ease',
-              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              fontSize: '0.75rem',
-              marginLeft: 'auto'
-            }}></span>
+            <span className={styles['sidebar-label']}>{item.label}</span>
+            <i className={`fa fa-chevron-right ${styles['sidebar-menu-arrow']}`} aria-hidden="true"></i>
           </>
         )}
       </button>
 
-      {/* Submenu - Siempre renderizado, visibilidad controlada por CSS */}
-      <ul 
-        className={`nav nav-second-level collapse ${isExpanded && !isCollapsed ? 'in' : ''}`}
-        style={{
-          listStyle: 'none',
-          padding: 0,
-          margin: 0,
-          maxHeight: isExpanded && !isCollapsed ? '1000px' : '0',
-          overflow: 'hidden',
-          transition: 'max-height 0.3s ease-out'
-        }}
+      <ul
+        id={submenuId}
+        className={`${styles['sidebar-submenu']} ${isExpanded && !isCollapsed ? styles.expanded : ''}`}
+        aria-labelledby={buttonId}
       >
         {item.submenu.map((subitem) => (
           <li
             key={subitem.path}
-            className={isActive(subitem.path) ? 'active' : ''}
+            className={`${styles['sidebar-submenu-item']} ${isActive(subitem.path) ? styles.active : ''}`}
           >
             <Link
               to={subitem.path}
-              className="sidebar-submenu-link"
+              className={styles['sidebar-submenu-link']}
               title={subitem.label}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0.5rem 1rem 0.5rem 3rem',
-                color: isActive(subitem.path) ? '#0d6efd' : '#999',
-                textDecoration: 'none',
-                fontSize: '0.9rem',
-                transition: 'all 0.2s ease',
-                borderLeft: isActive(subitem.path) ? '3px solid #0d6efd' : '3px solid transparent',
-                paddingLeft: isActive(subitem.path) ? '2.7rem' : '3rem'
-              }}
+              aria-current={isActive(subitem.path) ? 'page' : undefined}
             >
-              <i className="fa fa-fi" style={{marginRight: '0.5rem', fontSize: '0.7rem'}}></i>
+              <span className={styles['sidebar-submenu-bullet']}></span>
               <span>{subitem.label}</span>
             </Link>
           </li>

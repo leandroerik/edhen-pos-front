@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import styles from './AddressForm.module.css';
 
-/**
- * Componente AddressForm
- * Formulario para crear/editar direcciones de envío
- * Incluye datos específicos para transportistas argentinos
- */
 const AddressForm = ({ address, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState(address || {
     calle: '',
@@ -15,26 +9,10 @@ const AddressForm = ({ address, onSubmit, onCancel }) => {
     codigoPostal: '',
     localidad: '',
     provincia: '',
-    transportista: 'Correo Argentino',
-    tipoEnvio: 'Domicilio',
-    codigoCliente: '',
-    esPorDefecto: false
+    esPorDefecto: false,
   });
 
   const [errors, setErrors] = useState({});
-
-  const transportistas = [
-    'Correo Argentino',
-    'OCA',
-    'Andreani',
-    'Otros'
-  ];
-
-  const tiposEnvio = [
-    'Domicilio',
-    'Sucursal',
-    'Retiro'
-  ];
 
   const provinciasAR = [
     'Buenos Aires',
@@ -84,10 +62,6 @@ const AddressForm = ({ address, onSubmit, onCancel }) => {
 
     if (!formData.provincia) {
       newErrors.provincia = 'La provincia es requerida';
-    }
-
-    if (!formData.codigoCliente || !formData.codigoCliente.trim()) {
-      newErrors.codigoCliente = 'El código de cliente del transportista es requerido';
     }
 
     setErrors(newErrors);
@@ -222,59 +196,6 @@ const AddressForm = ({ address, onSubmit, onCancel }) => {
           </select>
           {errors.provincia && <div className="invalid-feedback d-block">{errors.provincia}</div>}
         </div>
-      </div>
-
-      <hr className="my-3" />
-
-      {/* Datos de Transportista */}
-      <h6 className="mb-3">
-        <i className="fa fa-truck me-2"></i>Datos del Transportista
-      </h6>
-
-      <div className="row">
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Transportista</label>
-          <select
-            className="form-select"
-            name="transportista"
-            value={formData.transportista}
-            onChange={handleInputChange}
-          >
-            {transportistas.map(tr => (
-              <option key={tr} value={tr}>{tr}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="col-md-6 mb-3">
-          <label className="form-label">Tipo de Envío</label>
-          <select
-            className="form-select"
-            name="tipoEnvio"
-            value={formData.tipoEnvio}
-            onChange={handleInputChange}
-          >
-            {tiposEnvio.map(tipo => (
-              <option key={tipo} value={tipo}>{tipo}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <label className="form-label">Código Cliente del Transportista *</label>
-        <input
-          type="text"
-          className={getFieldClass('codigoCliente')}
-          name="codigoCliente"
-          value={formData.codigoCliente}
-          onChange={handleInputChange}
-          placeholder="Ej: CA-123456 (Correo Argentino) u OCA-456789"
-        />
-        <small className="form-text text-muted">
-          Tu número de cuenta o código de cliente con el transportista
-        </small>
-        {errors.codigoCliente && <div className="invalid-feedback d-block">{errors.codigoCliente}</div>}
       </div>
 
       {/* Dirección por defecto */}

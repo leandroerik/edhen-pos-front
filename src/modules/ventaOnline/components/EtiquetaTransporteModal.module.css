@@ -1,0 +1,15 @@
+.etiquetaPreview {
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.etiquetaTexto {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 0;
+  white-space: pre-wrap;
+  color: #212529;
+}

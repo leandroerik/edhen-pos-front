@@ -1,0 +1,85 @@
+/* Estilos específicos para el módulo de transportes */
+
+.sortable {
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.sortable:hover {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.sortable .fa {
+  opacity: 0.5;
+}
+
+.sortable:hover .fa {
+  opacity: 1;
+}
+
+/* Botón de estado interactivo */
+.stateButton {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.stateButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.stateButton:active {
+  transform: translateY(0);
+}
+
+/* Estilos para las tarjetas de estadísticas */
+.stats-card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos para la tabla */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badge con animación */
+.badge {
+  transition: all 0.2s ease;
+}
+
+/* Botones de acción con mejor espaciado */
+.btn-group .btn {
+  margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+  margin-right: 0;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .stats-card .card-title {
+    font-size: 1.5rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    margin-right: 0;
+    margin-bottom: 2px;
+  }
+}

@@ -3,13 +3,17 @@
 }
 
 .categoryItem {
-  padding: 0.75rem 1rem;
+  padding: 0.9rem 1rem;
   border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  background: linear-gradient(to right, rgba(0,123,255,0.02), transparent);
 }
 
 .categoryItem:hover {
-  background-color: #f8f9fa;
+  background: linear-gradient(to right, rgba(0,123,255,0.08), transparent);
+  border-left-color: #007bff;
+  transform: translateX(2px);
 }
 
 .categoryItem:last-child {
@@ -17,12 +21,43 @@
 }
 
 .categoryName {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: #1a2332;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.categoryStats {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.3rem;
 }
 
 .badge {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  padding: 0.35rem 0.65rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(0,123,255,0.1);
+  color: #007bff;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .categoryItem {
+    padding: 0.75rem;
+    margin: 0.25rem 0.25rem;
+  }
+
+  .categoryName {
+    font-size: 0.9rem;
+  }
+
+  .categoryStats {
+    font-size: 0.8rem;
+  }
 }

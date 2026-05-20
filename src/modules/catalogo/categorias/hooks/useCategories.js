@@ -1,157 +1,54 @@
-/**
- * Hook personalizado para la lógica de Categorías
- * Maneja estado, validaciones y llamadas al servicio
- */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { fetchCategories, saveCategory, deleteCategory } from '../services/categoriesService';
-import { usePagination, useSearchFilter } from '../../hooks/useCatalogoHooks';
-import { validaciones, validateObject } from '../../utils/validators';
+
+const MOCK_CATEGORIAS = [
+  { id: 1, nombre: 'Remeras',    descripcion: 'Remeras casuales y deportivas', icono: 'fa-shirt',           activo: true },
+  { id: 2, nombre: 'Buzos',      descripcion: 'Buzos y sudaderas cómodas',     icono: 'fa-coat',            activo: true },
+  { id: 3, nombre: 'Pantalones', descripcion: 'Jeans, deportivos y casuales',  icono: 'fa-person-hiking',   activo: true },
+  { id: 4, nombre: 'Musculosas', descripcion: 'Musculosas y tops deportivos',  icono: 'fa-vest',            activo: true },
+  { id: 5, nombre: 'Gorros',     descripcion: 'Gorros y accesorios de cabeza', icono: 'fa-hat-cowboy',      activo: true },
+  { id: 6, nombre: 'Accesorios', descripcion: 'Cinturones, bolsos y complementos', icono: 'fa-ring',        activo: true },
+  { id: 7, nombre: 'Ofertas',    descripcion: 'Productos en oferta y descuentos',  icono: 'fa-percent',     activo: true },
+];
 
 export const useCategories = () => {
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    icono: 'fa-cube',
-    activo: true
-  });
-  const [errors, setErrors] = useState({});
+  const [loading, setLoading]       = useState(false);
 
-  const { searchTerm, setSearchTerm, filteredItems } = useSearchFilter(categories);
-  const pagination = usePagination(filteredItems, 10);
-
-  // Cargar categorías al montar
-  useEffect(() => {
-    loadCategoriesData();
-  }, []);
-
-  const loadCategoriesData = async () => {
+  const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchCategories();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
+      setCategories(MOCK_CATEGORIAS);
+    } catch {
       toast.error('Error al cargar categorías');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const crear = (data) => {
+    const id = Math.max(...categories.map((c) => c.id), 0) + 1;
+    setCategories((prev) => [...prev, { ...data, id }]);
+    toast.success('Categoría creada');
   };
 
-  const validateForm = () => {
-    const fieldValidations = {
-      nombre: validaciones.nombre,
-      descripcion: validaciones.descripcion
-    };
-    const newErrors = validateObject(formData, fieldValidations);
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const actualizar = (id, data) => {
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
+    toast.success('Categoría actualizada');
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) {
-      toast.error('Por favor corrige los errores');
-      return;
-    }
-
-    try {
-      const savedCategory = await saveCategory(formData, editingId);
-      
-      if (editingId) {
-        setCategories(prev => 
-          prev.map(c => c.id === editingId ? savedCategory : c)
-        );
-        toast.success('Categoría actualizada');
-      } else {
-        setCategories(prev => [...prev, savedCategory]);
-        toast.success('Categoría creada');
-      }
-      
-      resetForm();
-      setShowModal(false);
-    } catch (error) {
-      console.error('Error saving category:', error);
-      toast.error('Error al guardar');
-    }
+  const eliminar = (id) => {
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    toast.success('Categoría eliminada');
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro?')) {
-      try {
-        await deleteCategory(id);
-        setCategories(prev => prev.filter(c => c.id !== id));
-        toast.success('Categoría eliminada');
-      } catch (error) {
-        console.error('Error deleting category:', error);
-        toast.error('Error al eliminar');
-      }
-    }
+  const toggleActivo = (categoria) => {
+    const activo = !categoria.activo;
+    setCategories((prev) => prev.map((c) => (c.id === categoria.id ? { ...c, activo } : c)));
+    toast.success(activo ? 'Categoría activada' : 'Categoría desactivada');
   };
 
-  const handleEdit = (category) => {
-    setFormData(category);
-    setEditingId(category.id);
-    setShowModal(true);
-  };
-
-  const handleToggleActivo = async (id) => {
-    try {
-      const category = categories.find(c => c.id === id);
-      if (!category) return;
-      
-      const updatedCategory = await saveCategory(
-        { ...category, activo: !category.activo },
-        id
-      );
-      
-      setCategories(prev => 
-        prev.map(c => c.id === id ? updatedCategory : c)
-      );
-      toast.success(updatedCategory.activo ? 'Categoría activada' : 'Categoría desactivada');
-    } catch (error) {
-      console.error('Error toggling category status:', error);
-      toast.error('Error al cambiar estado');
-    }
-  };
-
-  const handleOpenModal = () => {
-    resetForm();
-    setShowModal(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      nombre: '',
-      descripcion: '',
-      icono: 'fa-cube',
-      activo: true
-    });
-    setEditingId(null);
-    setErrors({});
-  };
-
-  return {
-    categories,
-    loading,
-    showModal,
-    setShowModal,
-    editingId,
-    formData,
-    setFormData,
-    errors,
-    searchTerm,
-    setSearchTerm,
-    filteredItems,
-    pagination,
-    handleSave,
-    handleDelete,
-    handleEdit,
-    handleOpenModal,
-    handleToggleActivo,
-    validateForm
-  };
+  return { categories, loading, crear, actualizar, eliminar, toggleActivo };
 };

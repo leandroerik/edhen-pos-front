@@ -1,87 +1,115 @@
 import React from 'react';
 import { formatCurrency } from './TPVUtils';
 
-const TPVVariantModal = ({
-  show,
-  producto,
-  varianteSeleccionada,
-  cantidadSeleccionada,
-  onVarianteChange,
-  onCantidadChange,
-  onCancel,
-  onConfirm
-}) => {
-  if (!show || !producto) return null;
+const BACKDROP_STYLE = { backgroundColor: 'rgba(0,0,0,0.5)' };
+const STEPPER_BTN_STYLE = { width: 32, height: 32, padding: 0 };
+const QTY_LABEL_STYLE = { minWidth: 24, textAlign: 'center', fontWeight: 700, fontSize: '1rem' };
+
+function getVariantLabel(variante) {
+  return Object.entries(variante)
+    .filter(([key]) => key !== 'id' && key !== 'stock')
+    .map(([, value]) => value)
+    .join(' / ');
+}
+
+function getStockBadgeClass(stock) {
+  if (stock > 5) return 'badge bg-success';
+  if (stock > 0) return 'badge bg-warning text-dark';
+  return 'badge bg-secondary';
+}
+
+function formatTotalLabel(count) {
+  return `${count} unidad${count !== 1 ? 'es' : ''} seleccionada${count !== 1 ? 's' : ''}`;
+}
+
+const VariantRow = ({ variante, cantidad, onCantidadChange }) => {
+  const stock = variante.stock || 0;
+  const sinStock = stock === 0;
 
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+    <div className={`list-group-item d-flex justify-content-between align-items-center py-3 px-4${sinStock ? ' opacity-50' : ''}`}>
+      <div className="d-flex align-items-center gap-2">
+        <span className="fw-semibold">{getVariantLabel(variante)}</span>
+        <span className={getStockBadgeClass(stock)}>{stock} unid.</span>
+      </div>
+      <div className="d-flex align-items-center gap-2">
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center"
+          style={STEPPER_BTN_STYLE}
+          onClick={() => onCantidadChange(variante.id, -1)}
+          disabled={sinStock || cantidad === 0}
+          aria-label="Restar"
+        >
+          <i className="fa fa-minus" style={{ fontSize: 11 }} />
+        </button>
+        <span style={QTY_LABEL_STYLE}>{cantidad}</span>
+        <button
+          type="button"
+          className="btn tpv-btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+          style={STEPPER_BTN_STYLE}
+          onClick={() => onCantidadChange(variante.id, +1)}
+          disabled={sinStock || cantidad >= stock}
+          aria-label="Sumar"
+        >
+          <i className="fa fa-plus" style={{ fontSize: 11 }} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const TPVVariantModal = ({ show, producto, variantCantidades, onCantidadChange, onCancel, onConfirm }) => {
+  if (!show || !producto) return null;
+
+  const totalItems = Object.values(variantCantidades).reduce((sum, q) => sum + q, 0);
+  const precioDisplay = producto.oferta
+    ? (producto.precioOferta ?? producto.precioVenta)
+    : producto.precioVenta;
+
+  return (
+    <div className="modal d-block" style={BACKDROP_STYLE}>
+      <div className="modal-dialog modal-dialog-centered modal-md">
         <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Seleccionar variante</h5>
-            <button type="button" className="btn-close" aria-label="Close" onClick={onCancel}></button>
-          </div>
-          <div className="modal-body">
-            <p className="mb-3">
-              <strong>{producto.nombre}</strong>
-              <span className="text-muted ms-2">SKU: {producto.sku}</span>
-            </p>
-            <div className="mb-4">
-              <label className="form-label fw-semibold">Variante</label>
-              <div className="list-group">
-                {producto.variantes.map((variante) => (
-                  <button
-                    key={variante.id}
-                    type="button"
-                    className={`list-group-item list-group-item-action ${varianteSeleccionada?.id === variante.id ? 'active' : ''}`}
-                    onClick={() => onVarianteChange(variante)}
-                    disabled={(variante.stock || 0) === 0}
-                  >
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>
-                        {Object.entries(variante)
-                          .filter(([key]) => key !== 'id' && key !== 'stock')
-                          .map(([_, value]) => value)
-                          .join(' / ')}
-                      </span>
-                      <span className={`badge ${variante.stock > 0 ? 'bg-success' : 'bg-secondary'}`}>
-                        {variante.stock} unid.
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+          <div className="modal-header border-bottom-0 pb-1">
+            <div>
+              <h5 className="modal-title mb-0">{producto.nombre}</h5>
+              <small className="text-muted">{formatCurrency(precioDisplay)} · SKU: {producto.sku}</small>
             </div>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Cantidad</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={cantidadSeleccionada}
-                  min="1"
-                  max={varianteSeleccionada ? varianteSeleccionada.stock : 1}
-                  onChange={(e) => onCantidadChange(Math.max(1, Math.min(parseInt(e.target.value, 10) || 1, varianteSeleccionada ? varianteSeleccionada.stock : 1)))}
+            <button type="button" className="btn-close" aria-label="Close" onClick={onCancel} />
+          </div>
+
+          <div className="modal-body p-0">
+            <div className="list-group list-group-flush">
+              {producto.variantes.map((variante) => (
+                <VariantRow
+                  key={variante.id}
+                  variante={variante}
+                  cantidad={variantCantidades[variante.id] || 0}
+                  onCantidadChange={onCantidadChange}
                 />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Precio unitario</label>
-                <div className="form-control bg-light">{formatCurrency(producto.precioVenta)}</div>
-              </div>
+              ))}
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onConfirm}
-              disabled={!varianteSeleccionada || (varianteSeleccionada.stock || 0) === 0}
-            >
-              Agregar al carrito
-            </button>
+
+          <div className="modal-footer justify-content-between">
+            <span className="text-muted small">
+              {totalItems > 0 ? formatTotalLabel(totalItems) : 'Seleccioná las cantidades'}
+            </span>
+            <div className="d-flex gap-2">
+              <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn tpv-btn-primary btn-sm"
+                onClick={onConfirm}
+                disabled={totalItems === 0}
+              >
+                <i className="fa fa-cart-plus me-1" />
+                Agregar al carrito
+              </button>
+            </div>
           </div>
         </div>
       </div>

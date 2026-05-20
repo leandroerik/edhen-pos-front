@@ -1,97 +1,68 @@
 import React from 'react';
-import styles from './AddressTable.module.css';
 
-/**
- * Componente AddressTable
- * Tabla para mostrar direcciones de envío con acciones
- */
 const AddressTable = ({ addresses, onEdit, onDelete, onSetDefault }) => {
   if (!addresses || addresses.length === 0) {
     return (
-      <div className="alert alert-info">
-        <i className="fa fa-info-circle me-2"></i>
-        No hay direcciones de envío registradas
+      <div className="text-center py-5 text-muted">
+        <i className="fa fa-map-pin fa-2x mb-2 d-block"></i>
+        <span className="small">Sin direcciones. Agregá una para comenzar.</span>
       </div>
     );
   }
 
   return (
-    <div className="table-responsive">
-      <table className={`table table-sm table-hover ${styles.addressTable}`}>
-        <thead className="table-light">
-          <tr>
-            <th style={{ width: '5%' }}>Def.</th>
-            <th>Dirección</th>
-            <th>Localidad</th>
-            <th>Provincia</th>
-            <th>CP</th>
-            <th>Transportista</th>
-            <th>Tipo</th>
-            <th>Código Cliente</th>
-            <th style={{ width: '10%' }}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {addresses.map(address => (
-            <tr key={address.id} className={address.esPorDefecto ? 'table-info' : ''}>
-              <td>
-                {address.esPorDefecto ? (
-                  <span className="badge bg-success" title="Dirección predeterminada">
-                    <i className="fa fa-check"></i>
+    <div className="d-flex flex-column gap-3">
+      {addresses.map((address) => (
+        <div
+          key={address.id}
+          className={`border rounded p-3 ${address.esPorDefecto ? 'border-primary bg-primary bg-opacity-10' : ''}`}
+        >
+          <div className="d-flex justify-content-between align-items-start gap-3">
+            <div className="flex-grow-1">
+              <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                {address.esPorDefecto && (
+                  <span className="badge text-bg-primary rounded-pill">
+                    <i className="fa fa-star me-1"></i>Predeterminada
                   </span>
-                ) : (
-                  <button
-                    className="btn btn-sm btn-link text-muted"
-                    onClick={() => onSetDefault(address.id)}
-                    title="Establecer como predeterminada"
-                  >
-                    <i className="fa fa-circle-notch"></i>
-                  </button>
                 )}
-              </td>
-              <td>
-                <div>
-                  <strong>{address.calle} {address.numero}</strong>
-                  {address.piso && <span>, Piso {address.piso}</span>}
-                  {address.depto && <span>, Depto {address.depto}</span>}
-                </div>
-              </td>
-              <td>{address.localidad}</td>
-              <td>{address.provincia}</td>
-              <td>
-                <span className="badge bg-light text-dark">{address.codigoPostal}</span>
-              </td>
-              <td>
-                <span className="badge bg-primary">{address.transportista}</span>
-              </td>
-              <td>
-                <span className="badge bg-secondary">{address.tipoEnvio}</span>
-              </td>
-              <td>
-                <small className="text-muted">{address.codigoCliente}</small>
-              </td>
-              <td>
-                <div className="btn-group btn-group-sm">
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => onEdit(address)}
-                    title="Editar"
-                  >
-                    <i className="fa fa-edit"></i>
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => onDelete(address.id)}
-                    title="Eliminar"
-                  >
-                    <i className="fa fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <span className="fw-semibold">
+                  {address.calle} {address.numero}
+                  {address.piso   ? `, Piso ${address.piso}`   : ''}
+                  {address.depto  ? ` Depto ${address.depto}`  : ''}
+                </span>
+              </div>
+              <div className="text-muted small">
+                {address.localidad}, {address.provincia} — CP {address.codigoPostal}
+              </div>
+            </div>
+            <div className="d-flex gap-1 flex-shrink-0">
+              {!address.esPorDefecto && (
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => onSetDefault(address.id)}
+                  title="Marcar como predeterminada"
+                >
+                  <i className="fa fa-star"></i>
+                </button>
+              )}
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => onEdit(address)}
+                title="Editar"
+              >
+                <i className="fa fa-pen"></i>
+              </button>
+              <button
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => onDelete(address.id)}
+                title="Eliminar"
+              >
+                <i className="fa fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

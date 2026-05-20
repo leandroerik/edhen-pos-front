@@ -1,0 +1,102 @@
+.alertsContainer {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.alertItem {
+  padding: 1rem !important;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.alertItem:hover {
+  transform: translateX(2px);
+}
+
+.alertItem.warning {
+  border-left-color: #ffc107;
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.alertItem.danger {
+  border-left-color: #dc3545;
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.alertItem.info {
+  border-left-color: #17a2b8;
+  background: rgba(23, 162, 184, 0.05);
+}
+
+.alertItem.success {
+  border-left-color: #28a745;
+  background: rgba(40, 167, 69, 0.05);
+}
+
+.compactAlert {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.compactAlert:last-child {
+  margin-bottom: 0;
+}
+
+.compactAlert:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.compactAlert .btn-close {
+  padding: 0.2rem;
+  margin: 0;
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.compactAlert .btn-close:hover {
+  opacity: 1;
+}
+
+/* Custom scrollbar */
+.alertsContainer::-webkit-scrollbar {
+  width: 5px;
+}
+
+.alertsContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alertsContainer::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 3px;
+}
+
+.alertsContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .alertsContainer {
+    max-height: 280px;
+  }
+
+  .compactAlert {
+    padding: 0.75rem 0.9rem !important;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .alertsContainer {
+    max-height: 250px;
+  }
+}

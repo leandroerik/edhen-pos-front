@@ -1,209 +1,143 @@
-import React from 'react';
-import { CatalogoTable, SearchFilterBar, PaginationControls } from '../components';
+import React, { useState } from 'react';
 import { useAttributes } from './hooks/useAttributes';
-import { AttributesForm } from './components/AttributesForm';
+import AttributesForm from './components/AttributesForm';
+import { CatalogoTable, SearchFilterBar, ConfirmDeleteModal } from '../components';
 
-/**
- * Componente para editar valores inline
- */
-const ValoresEditableCell = ({ valores, attributeId, onUpdate }) => {
-  const [valueTags, setValueTags] = React.useState([]);
-  const [editingIndex, setEditingIndex] = React.useState(null);
-  const [editingValue, setEditingValue] = React.useState('');
-
-  React.useEffect(() => {
-    if (valores) {
-      const tags = valores.split(',').map(v => v.trim()).filter(v => v);
-      setValueTags(tags);
-    }
-  }, [valores]);
-
-  const handleEditTag = (index) => {
-    setEditingIndex(index);
-    setEditingValue(valueTags[index]);
-  };
-
-  const handleSaveTag = (index) => {
-    if (!editingValue.trim()) {
-      const newTags = valueTags.filter((_, i) => i !== index);
-      setValueTags(newTags);
-      onUpdate(attributeId, newTags.join(','));
-    } else {
-      const newTags = [...valueTags];
-      newTags[index] = editingValue.trim();
-      setValueTags(newTags);
-      onUpdate(attributeId, newTags.join(','));
-    }
-    setEditingIndex(null);
-    setEditingValue('');
-  };
-
-  const handleRemoveTag = (index) => {
-    const newTags = valueTags.filter((_, i) => i !== index);
-    setValueTags(newTags);
-    onUpdate(attributeId, newTags.join(','));
-  };
-
-  return (
-    <div>
-      {valueTags.map((tag, index) => (
-        <span key={index} className="me-2 mb-2 d-inline-block">
-          {editingIndex === index ? (
-            <input
-              type="text"
-              value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              onBlur={() => handleSaveTag(index)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveTag(index);
-                if (e.key === 'Escape') setEditingIndex(null);
-              }}
-              autoFocus
-              className="form-control form-control-sm"
-              style={{ width: '130px', display: 'inline-block' }}
-            />
-          ) : (
-            <span
-              onClick={() => handleEditTag(index)}
-              className="badge bg-primary"
-              style={{ cursor: 'pointer', userSelect: 'none' }}
-              title="Click para editar"
-            >
-              {tag}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveTag(index);
-                }}
-                className="btn-close btn-close-white ms-1"
-                style={{ display: 'inline-block', fontSize: '0.75rem', padding: '0 0.125rem' }}
-                title="Eliminar"
-              ></button>
-            </span>
-          )}
-        </span>
-      ))}
-    </div>
-  );
-};
-
-/**
- * Página de Gestión de Atributos
- * ABM de atributos de productos (Tamaño, Color, etc)
- * @component
- */
-const AttributesPage = () => {
+const AttributesList = () => {
   const {
     attributes,
     loading,
+    saving,
     showModal,
-    setShowModal,
     editingId,
     formData,
-    setFormData,
     errors,
     searchTerm,
     setSearchTerm,
-    pagination,
-    handleSave,
-    handleSaveWithValues,
-    handleDelete,
-    handleEdit,
-    handleOpenModal,
-    handleUpdateValores,
-    handleToggleActivo
+    abrirCrear,
+    abrirEditar,
+    cerrarModal,
+    handleChange,
+    handleGuardar,
+    handleEliminar,
+    toggleActivo,
   } = useAttributes();
 
+  const [confirmEliminar, setConfirmEliminar] = useState(null);
+
   const columns = [
-    { key: 'nombre', label: 'Nombre', width: '30%' },
-    { 
-      key: 'valores', 
-      label: 'Valores', 
-      width: '50%',
-      render: (value, row) => (
-        <ValoresEditableCell 
-          valores={value} 
-          attributeId={row.id}
-          onUpdate={handleUpdateValores}
-        />
-      )
+    {
+      key: 'nombre',
+      label: 'Atributo',
+      width: '25%',
+      render: (value) => (
+        <div className="d-flex align-items-center gap-2">
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: '#e9ecef', color: '#495057',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 700, fontSize: '0.8rem', flexShrink: 0,
+          }}>
+            {value.charAt(0).toUpperCase()}
+          </div>
+          <span>{value}</span>
+        </div>
+      ),
     },
-    { 
-      key: 'activo', 
-      label: 'Estado', 
-      width: '20%',
+    {
+      key: 'valores',
+      label: 'Valores',
+      width: '60%',
+      render: (value) => (
+        <div className="d-flex flex-wrap gap-1">
+          {value
+            ? value.split(',').map((v) => v.trim()).filter(Boolean).map((tag) => (
+                <span
+                  key={tag}
+                  className="badge rounded-pill border text-body-secondary"
+                  style={{ fontWeight: 400, fontSize: '0.78rem' }}
+                >
+                  {tag}
+                </span>
+              ))
+            : <span className="text-muted">—</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'activo',
+      label: 'Estado',
+      width: '15%',
       render: (value, row) => (
-        <button
-          className={`btn btn-sm ${value ? 'btn-success' : 'btn-secondary'}`}
-          onClick={() => handleToggleActivo(row.id)}
-          title="Click para cambiar estado"
+        <span
+          onClick={() => toggleActivo(row)}
+          style={{ cursor: 'pointer' }}
+          className={`badge rounded-pill px-3 py-2 ${value ? 'text-bg-success' : 'text-bg-secondary'}`}
         >
           {value ? 'Activo' : 'Inactivo'}
-        </button>
-      )
-    }
+        </span>
+      ),
+    },
   ];
 
   return (
     <div className="container-fluid p-4">
-      <div className="row mb-5">
+      <div className="row mb-3 pb-2 border-bottom">
         <div className="col-md-8">
-          <h2 className="h3 fw-bold mb-2">
-            <i className="fa fa-tag me-2 text-primary"></i>
-            Gestión de Atributos
-          </h2>
-          <p className="text-muted small mb-0">Crear y editar atributos de productos (Talla, Color, etc)</p>
+          <h1 className="h3 fw-bold mb-1">
+            <i className="fa fa-tags me-3 text-primary"></i>Atributos
+          </h1>
+          <p className="text-muted mb-0 small">Administrá los atributos de productos (Talla, Color, etc.)</p>
         </div>
-        <div className="col-md-4 text-end">
-          <button 
-            className="btn btn-primary btn-lg"
-            onClick={handleOpenModal}
-          >
-            <i className="fa fa-plus me-2"></i>
-            Nuevo Atributo
+        <div className="col-md-4 d-flex align-items-center justify-content-end">
+          <button className="btn btn-primary" onClick={abrirCrear} disabled={loading}>
+            <i className="fa fa-plus me-2"></i>Nuevo Atributo
           </button>
         </div>
       </div>
 
-      <SearchFilterBar
-        searchTerm={searchTerm}
-        onSearch={setSearchTerm}
-        onClear={() => setSearchTerm('')}
-      />
-
-      <div className="card shadow-sm mb-4">
-        <div className="card-body p-0">
-          <CatalogoTable
-            columns={columns}
-            data={pagination.paginatedItems}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={loading}
-          />
-        </div>
+      <div className="mb-3">
+        <SearchFilterBar
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          onClear={() => setSearchTerm('')}
+          placeholder="Buscar atributo..."
+        />
       </div>
 
-      <PaginationControls
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        pageSize={pagination.pageSize}
-        onPageChange={pagination.handlePageChange}
-        onPageSizeChange={pagination.handlePageSizeChange}
+      <CatalogoTable
+        data={attributes}
+        columns={columns}
+        loading={loading}
+        onEdit={abrirEditar}
+        onDelete={(id) => {
+          const attr = attributes.find((a) => a.id === id);
+          if (attr) setConfirmEliminar(attr);
+        }}
       />
 
       {showModal && (
         <AttributesForm
           editingId={editingId}
           formData={formData}
-          setFormData={setFormData}
+          onChange={handleChange}
           errors={errors}
-          onSave={handleSave}
-          onSaveWithValues={handleSaveWithValues}
-          onCancel={() => setShowModal(false)}
+          onSave={handleGuardar}
+          onCancel={cerrarModal}
+          loading={saving}
+        />
+      )}
+
+      {confirmEliminar && (
+        <ConfirmDeleteModal
+          nombre={confirmEliminar.nombre}
+          entidad="atributo"
+          onConfirm={() => { handleEliminar(confirmEliminar.id); setConfirmEliminar(null); }}
+          onCancel={() => setConfirmEliminar(null)}
         />
       )}
     </div>
   );
 };
 
-export default AttributesPage;
+export default AttributesList;

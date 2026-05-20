@@ -1,0 +1,44 @@
+.businessInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1rem;
+  height: 100%;
+}
+
+.turnoBlock {
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid transparent;
+}
+
+.turnoOpen {
+  background: #f0fff4;
+  border-color: #c3e6cb;
+}
+
+.turnoClosed {
+  background: #fff5f5;
+  border-color: #f5c6cb;
+}
+
+.totalValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #198754;
+  line-height: 1;
+}
+
+.turnoClosed .totalValue {
+  color: #dc3545;
+}
+
+.infoRow {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.infoRow:last-of-type {
+  border-bottom: none;
+}

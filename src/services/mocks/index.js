@@ -194,6 +194,211 @@ export const productosData = [
   }
 ];
 
+export const transportesData = [
+  {
+    id: 1,
+    nombre: 'Correo Argentino',
+    descripcion: 'Servicio postal nacional con seguimiento y entrega puerta a puerta',
+    servicio: 'Estándar / Prioritario',
+    activo: true,
+    campos: [
+      { key: 'nombreCompleto', label: 'Nombre y Apellido', type: 'text',   required: true,  placeholder: 'Ej: Juan Pérez' },
+      { key: 'dni',            label: 'DNI',               type: 'text',   required: true,  placeholder: 'Ej: 30123456' },
+      { key: 'celular',        label: 'Celular',            type: 'tel',    required: true,  placeholder: '+54 9 11 1234 5678' },
+      { key: 'email',          label: 'Email',              type: 'email',  required: false, placeholder: 'correo@ejemplo.com' },
+      { key: 'calle',          label: 'Calle',              type: 'text',   required: true,  placeholder: 'Av. Corrientes' },
+      { key: 'numero',         label: 'Número',             type: 'text',   required: true,  placeholder: '1234' },
+      { key: 'piso',           label: 'Piso / Depto',       type: 'text',   required: false, placeholder: '2B (opcional)' },
+      { key: 'localidad',      label: 'Localidad',          type: 'text',   required: true,  placeholder: '' },
+      { key: 'provincia',      label: 'Provincia',          type: 'text',   required: true,  placeholder: '' },
+      { key: 'codigoPostal',   label: 'Código Postal',      type: 'text',   required: true,  placeholder: 'Ej: 1043' },
+      { key: 'tipoEnvio',      label: 'Tipo de envío',      type: 'select', required: true,  placeholder: '', opciones: ['Carta certificada', 'Encomienda', 'Prioritario', 'Express'] },
+    ]
+  },
+  {
+    id: 2,
+    nombre: 'OCA',
+    descripcion: 'Envíos rápidos con retiro en sucursal opcional',
+    servicio: 'E.PAK / OCA Express',
+    activo: true,
+    campos: [
+      { key: 'nombreCompleto',  label: 'Nombre y Apellido',       type: 'text',   required: true,  placeholder: 'Ej: María García' },
+      { key: 'dni',             label: 'DNI',                      type: 'text',   required: true,  placeholder: 'Ej: 28765432' },
+      { key: 'celular',         label: 'Celular',                  type: 'tel',    required: true,  placeholder: '+54 9 11 1234 5678' },
+      { key: 'email',           label: 'Email',                    type: 'email',  required: false, placeholder: '' },
+      { key: 'direccion',       label: 'Dirección completa',       type: 'text',   required: true,  placeholder: 'Calle y número' },
+      { key: 'localidad',       label: 'Localidad',                type: 'text',   required: true,  placeholder: '' },
+      { key: 'provincia',       label: 'Provincia',                type: 'text',   required: true,  placeholder: '' },
+      { key: 'codigoPostal',    label: 'Código Postal',            type: 'text',   required: true,  placeholder: '' },
+      { key: 'sucursalRetiro',  label: 'Sucursal retiro (opc.)',   type: 'text',   required: false, placeholder: 'Dejar vacío si entrega a domicilio' },
+      { key: 'bultos',          label: 'Cantidad de bultos',       type: 'number', required: true,  placeholder: '1' },
+      { key: 'pesoKg',          label: 'Peso aprox. (kg)',         type: 'number', required: false, placeholder: '' },
+    ]
+  },
+  {
+    id: 3,
+    nombre: 'Andreani',
+    descripcion: 'Logística nacional con seguimiento en tiempo real',
+    servicio: 'Estándar / Express',
+    activo: true,
+    campos: [
+      { key: 'nombreCompleto', label: 'Nombre y Apellido',  type: 'text',   required: true,  placeholder: '' },
+      { key: 'dni',            label: 'DNI',                type: 'text',   required: true,  placeholder: '' },
+      { key: 'celular',        label: 'Celular',             type: 'tel',    required: true,  placeholder: '+54 9 ...' },
+      { key: 'email',          label: 'Email',              type: 'email',  required: false, placeholder: '' },
+      { key: 'direccion',      label: 'Dirección',          type: 'text',   required: true,  placeholder: 'Calle, número, piso' },
+      { key: 'localidad',      label: 'Localidad',          type: 'text',   required: true,  placeholder: '' },
+      { key: 'provincia',      label: 'Provincia',          type: 'text',   required: true,  placeholder: '' },
+      { key: 'codigoPostal',   label: 'Código Postal',      type: 'text',   required: true,  placeholder: '' },
+      { key: 'tipoServicio',   label: 'Tipo de servicio',   type: 'select', required: true,  placeholder: '', opciones: ['Andreani Estándar', 'Andreani Express', 'Andreani a Sucursal'] },
+      { key: 'pesoKg',         label: 'Peso aprox. (kg)',   type: 'number', required: false, placeholder: '' },
+    ]
+  },
+  {
+    id: 4,
+    nombre: 'Transporte particular',
+    descripcion: 'Entrega con transportista propio o informal',
+    servicio: 'Informal / Local',
+    activo: true,
+    campos: [
+      { key: 'nombre',              label: 'Nombre',                   type: 'text', required: true,  placeholder: '' },
+      { key: 'apellido',            label: 'Apellido',                 type: 'text', required: true,  placeholder: '' },
+      { key: 'dni',                 label: 'DNI',                      type: 'text', required: true,  placeholder: '' },
+      { key: 'celular',             label: 'Celular',                  type: 'tel',  required: true,  placeholder: '+54 9 ...' },
+      { key: 'email',               label: 'Email',                    type: 'email',required: false, placeholder: '' },
+      { key: 'codigoPostal',        label: 'Código Postal',            type: 'text', required: true,  placeholder: '' },
+      { key: 'provincia',           label: 'Provincia',                type: 'text', required: true,  placeholder: '' },
+      { key: 'localidad',           label: 'Localidad',                type: 'text', required: true,  placeholder: '' },
+      { key: 'direccion',           label: 'Dirección',                type: 'text', required: true,  placeholder: '' },
+      { key: 'nombreTransportista', label: 'Nombre del transportista', type: 'text', required: true,  placeholder: 'Ej: Rodolfo' },
+    ]
+  }
+];
+
+// Mock data para pedidos online
+export const pedidosOnlineData = [
+  {
+    id: 1,
+    numeroPedido: 'P-001',
+    fecha: '2026-04-08',
+    cliente: 'Cliente Online 1',
+    email: 'cliente1@example.com',
+    telefono: '+54911234567',
+    envio: {
+      nombre: 'Juan Pérez',
+      email: 'juan@example.com',
+      telefono: '+54911234567',
+      direccion: 'Av. Corrientes 1234',
+      ciudad: 'Buenos Aires',
+      codigoPostal: '1000'
+    },
+    items: [
+      { id: 1, nombre: 'Producto A', cantidad: 2, precio: 50 },
+      { id: 2, nombre: 'Producto B', cantidad: 1, precio: 75 }
+    ],
+    subtotal: 175,
+    descuento: 0,
+    total: 175,
+    formaPago: 'Tarjeta de crédito',
+    cambio: 0,
+    estado: 'finalizado',
+    source: 'online',
+    trazabilidad: [
+      {
+        id: 1,
+        estado: 'recibido',
+        fecha: '2026-04-08T10:00:00Z',
+        usuario: 'Sistema',
+        notas: 'Pedido recibido desde la tienda online'
+      },
+      {
+        id: 2,
+        estado: 'confirmado',
+        fecha: '2026-04-08T10:15:00Z',
+        usuario: 'Admin',
+        notas: 'Pago confirmado y stock reservado'
+      },
+      {
+        id: 3,
+        estado: 'preparado',
+        fecha: '2026-04-08T11:00:00Z',
+        usuario: 'Logística',
+        notas: 'Pedido preparado y embalado'
+      },
+      {
+        id: 4,
+        estado: 'enviado',
+        fecha: '2026-04-08T14:30:00Z',
+        usuario: 'Transporte',
+        notas: 'Enviado con Correo Argentino - guía 123456789'
+      },
+      {
+        id: 5,
+        estado: 'finalizado',
+        fecha: '2026-04-10T09:15:00Z',
+        usuario: 'Sistema',
+        notas: 'Entrega confirmada por el cliente'
+      }
+    ]
+  },
+  {
+    id: 2,
+    numeroPedido: 'P-002',
+    fecha: '2026-04-08',
+    cliente: 'Cliente Online 2',
+    email: 'cliente2@example.com',
+    telefono: '+54911876543',
+    envio: {
+      nombre: 'María García',
+      email: 'maria@example.com',
+      telefono: '+54911876543',
+      direccion: 'Calle Florida 567',
+      ciudad: 'Buenos Aires',
+      codigoPostal: '1005'
+    },
+    items: [
+      { id: 3, nombre: 'Producto C', cantidad: 3, precio: 45 }
+    ],
+    subtotal: 135,
+    descuento: 13.5,
+    total: 121.5,
+    formaPago: 'Transferencia',
+    cambio: 0,
+    estado: 'enviado',
+    source: 'online',
+    trazabilidad: [
+      {
+        id: 1,
+        estado: 'recibido',
+        fecha: '2026-04-08T08:30:00Z',
+        usuario: 'Sistema',
+        notas: 'Pedido recibido desde la tienda online'
+      },
+      {
+        id: 2,
+        estado: 'confirmado',
+        fecha: '2026-04-08T09:00:00Z',
+        usuario: 'Admin',
+        notas: 'Pago verificado'
+      },
+      {
+        id: 3,
+        estado: 'preparado',
+        fecha: '2026-04-08T10:45:00Z',
+        usuario: 'Logística',
+        notas: 'Pedido empaquetado'
+      },
+      {
+        id: 4,
+        estado: 'enviado',
+        fecha: '2026-04-08T16:20:00Z',
+        usuario: 'Transporte',
+        notas: 'Enviado con OCA - código ABC123456'
+      }
+    ]
+  }
+];
+
 // Mock data para clientes
 export const clientesData = [
   {
@@ -664,6 +869,218 @@ export const mockAtributoService = {
           reject({ response: { status: 404, data: { message: 'Atributo no encontrado' } } });
         }
       }, 500);
+    });
+  }
+};
+
+export const mockTransportesService = {
+  listar: async () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: transportesData });
+      }, 300);
+    });
+  },
+  obtener: async (id) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const transporte = transportesData.find(t => t.id === id);
+        if (transporte) {
+          resolve({ data: transporte });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Transportista no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  crear: async (transporte) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const nuevoTransporte = {
+          ...transporte,
+          id: Math.max(...transportesData.map(t => t.id), 0) + 1,
+          campos: transporte.campos || []
+        };
+        transportesData.push(nuevoTransporte);
+        resolve({ data: nuevoTransporte });
+      }, 300);
+    });
+  },
+  actualizar: async (id, transporte) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = transportesData.findIndex(t => t.id === id);
+        if (idx !== -1) {
+          transportesData[idx] = { ...transportesData[idx], ...transporte };
+          resolve({ data: transportesData[idx] });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Transportista no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  eliminar: async (id) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = transportesData.findIndex(t => t.id === id);
+        if (idx !== -1) {
+          transportesData.splice(idx, 1);
+          resolve({ data: { success: true } });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Transportista no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  buscar: async (term) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const searchTerm = term.toLowerCase();
+        const resultados = transportesData.filter(transporte =>
+          transporte.nombre.toLowerCase().includes(searchTerm) ||
+          transporte.descripcion.toLowerCase().includes(searchTerm) ||
+          transporte.servicio.toLowerCase().includes(searchTerm) ||
+          (transporte.campos || []).some(c => c.label.toLowerCase().includes(searchTerm))
+        );
+        resolve({ data: resultados });
+      }, 300);
+    });
+  }
+};
+
+export const mockPedidosOnlineService = {
+  listar: async (filtros = {}) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let pedidos = [...pedidosOnlineData];
+        if (filtros.estado) {
+          pedidos = pedidos.filter(p => p.estado === filtros.estado);
+        }
+        if (filtros.fechaDesde) {
+          pedidos = pedidos.filter(p => new Date(p.fecha) >= new Date(filtros.fechaDesde));
+        }
+        if (filtros.fechaHasta) {
+          pedidos = pedidos.filter(p => new Date(p.fecha) <= new Date(filtros.fechaHasta));
+        }
+        resolve({ data: pedidos, total: pedidos.length, success: true });
+      }, 300);
+    });
+  },
+  obtener: async (id) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const pedido = pedidosOnlineData.find(p => p.id === id) || null;
+        resolve({ data: pedido, success: !!pedido });
+      }, 300);
+    });
+  },
+  crear: async (pedido) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const nuevoPedido = {
+          ...pedido,
+          id: Math.max(...pedidosOnlineData.map(p => p.id), 0) + 1,
+          numeroPedido: `P-${String(Math.max(...pedidosOnlineData.map(p => parseInt(p.numeroPedido.split('-')[1])), 0) + 1).padStart(3, '0')}`,
+          fecha: new Date().toISOString().split('T')[0],
+          estado: 'recibido',
+          trazabilidad: [
+            {
+              id: 1,
+              estado: 'recibido',
+              fecha: new Date().toISOString(),
+              usuario: 'Sistema',
+              notas: 'Pedido recibido en el sistema'
+            }
+          ]
+        };
+        pedidosOnlineData.push(nuevoPedido);
+        resolve({ data: nuevoPedido, success: true });
+      }, 300);
+    });
+  },
+  actualizar: async (id, updates) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = pedidosOnlineData.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          pedidosOnlineData[idx] = { ...pedidosOnlineData[idx], ...updates };
+          resolve({ data: pedidosOnlineData[idx], success: true });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Pedido no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  eliminar: async (id) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = pedidosOnlineData.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          pedidosOnlineData.splice(idx, 1);
+          resolve({ data: { success: true } });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Pedido no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  cambiarEstado: async (id, nuevoEstado) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const pedido = pedidosOnlineData.find(p => p.id === id);
+        if (pedido) {
+          const evento = {
+            id: (pedido.trazabilidad?.length || 0) + 1,
+            estado: nuevoEstado,
+            fecha: new Date().toISOString(),
+            usuario: 'Sistema',
+            notas: `Estado cambiado a ${nuevoEstado}`
+          };
+          pedido.estado = nuevoEstado;
+          pedido.trazabilidad = [...(pedido.trazabilidad || []), evento];
+          resolve({ data: pedido, success: true });
+        } else {
+          reject({ response: { status: 404, data: { message: 'Pedido no encontrado' } } });
+        }
+      }, 300);
+    });
+  },
+  obtenerEstadisticas: async (fechaDesde, fechaHasta) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let pedidos = [...pedidosOnlineData];
+        if (fechaDesde) {
+          pedidos = pedidos.filter(p => new Date(p.fecha) >= new Date(fechaDesde));
+        }
+        if (fechaHasta) {
+          pedidos = pedidos.filter(p => new Date(p.fecha) <= new Date(fechaHasta));
+        }
+
+        const estadisticas = {
+          total: pedidos.length,
+          porEstado: {
+            nuevo: pedidos.filter(p => p.estado === 'nuevo').length,
+            confirmado: pedidos.filter(p => p.estado === 'confirmado').length,
+            preparando: pedidos.filter(p => p.estado === 'preparando').length,
+            listo: pedidos.filter(p => p.estado === 'listo').length,
+            enviado: pedidos.filter(p => p.estado === 'enviado').length,
+            entregado: pedidos.filter(p => p.estado === 'entregado').length,
+            cancelado: pedidos.filter(p => p.estado === 'cancelado').length
+          },
+          totalVentas: pedidos.reduce((sum, p) => sum + (p.total || 0), 0),
+          promedioPedido: pedidos.length > 0 ? pedidos.reduce((sum, p) => sum + (p.total || 0), 0) / pedidos.length : 0
+        };
+
+        resolve({ data: estadisticas, success: true });
+      }, 300);
+    });
+  },
+  exportar: async (filtros = {}) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const pedidos = [...pedidosOnlineData];
+        resolve({ data: { url: '/downloads/pedidos-online-export.csv', registros: pedidos.length }, success: true });
+      }, 300);
     });
   }
 };

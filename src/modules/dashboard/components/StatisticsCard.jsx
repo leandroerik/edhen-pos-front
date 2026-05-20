@@ -9,27 +9,35 @@ import styles from './StatisticsCard.module.css';
 const StatisticsCard = ({ stat }) => {
   if (!stat) return null;
 
-  const { title, value, icon, bg, color } = stat;
+  const { title, value, change, changeType, icon, bg, description, subtitle } = stat;
 
   return (
-    <div className={`${styles.card} col-md-3 mb-3`}>
-      <div className="card h-100">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <p className={`text-muted mb-1 ${styles.title}`}>{title}</p>
-              <h4 className={`mb-0 ${styles.value}`}>{value}</h4>
-            </div>
-            <div
-              className={`${bg} text-white p-3 rounded-circle ${styles.iconContainer}`}
-              role="img"
-              aria-label={`Icono de ${title}`}
-            >
-              <i className={`fa ${icon} fa-lg`}></i>
-            </div>
-          </div>
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <div className={`${styles.iconWrapper} ${bg}`}>
+          <i className={`fa ${icon}`}></i>
         </div>
+        <p className={styles.title}>{title}</p>
       </div>
+      
+      <div className={styles.cardContent}>
+        <h2 className={styles.value}>{value}</h2>
+        
+        {change !== 0 && (
+          <div className={`${styles.changeIndicator} ${styles[changeType]}`}>
+            <i className={`fa ${changeType === 'positive' ? 'fa-arrow-up' : 'fa-arrow-down'} me-1`}></i>
+            <span>{Math.abs(change)}% vs ayer</span>
+          </div>
+        )}
+        
+        {subtitle && (
+          <p className={styles.subtitle}>{subtitle}</p>
+        )}
+      </div>
+      
+      {description && (
+        <p className={styles.description}>{description}</p>
+      )}
     </div>
   );
 };
@@ -39,9 +47,13 @@ StatisticsCard.propTypes = {
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     value: PropTypes.string.isRequired,
+    previousValue: PropTypes.string,
+    change: PropTypes.number,
+    changeType: PropTypes.oneOf(['positive', 'negative', 'neutral']),
     icon: PropTypes.string.isRequired,
     bg: PropTypes.string.isRequired,
-    color: PropTypes.string
+    color: PropTypes.string,
+    description: PropTypes.string
   })
 };
 

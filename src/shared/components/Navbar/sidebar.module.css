@@ -1,0 +1,198 @@
+.sidebar {
+  width: 250px;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  transition: width 0.3s ease;
+  z-index: 1020;
+  position: fixed;
+  left: 0;
+  top: 56px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0;
+  background-color: #212529;
+  color: #e0e0e0;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-item {
+  position: relative;
+}
+
+.sidebar-item.active > .sidebar-link {
+  color: #0d6efd;
+  background-color: rgba(13, 110, 253, 0.1);
+  border-left: 3px solid #0d6efd;
+  padding-left: calc(1rem - 3px);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: #999;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #0d6efd;
+  padding-left: calc(1rem - 3px);
+  border-left: 3px solid #0d6efd;
+}
+
+.sidebar-icon {
+  width: 1em;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+
+.sidebar.collapsed .sidebar-icon {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .sidebar-label {
+  display: none;
+}
+
+.sidebar-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #0d6efd;
+  padding-left: calc(1rem - 3px);
+  border-left: 3px solid #0d6efd;
+}
+
+.sidebar-item.active > .sidebar-menu-toggle,
+.sidebar-submenu.has-active > .sidebar-menu-toggle {
+  color: #0d6efd;
+  background-color: rgba(13, 110, 253, 0.1);
+  border-left: 3px solid #0d6efd;
+  padding-left: calc(1rem - 3px);
+}
+
+.sidebar-menu-arrow {
+  transition: transform 0.3s ease;
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.sidebar-menu-toggle[aria-expanded="true"] .sidebar-menu-arrow {
+  transform: rotate(90deg);
+}
+
+.sidebar-submenu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.sidebar-submenu.expanded {
+  max-height: 2000px;
+  /* Línea vertical: border-left en el ul, con margen para alinear bajo el ícono del padre */
+  margin: 0.25rem 0.75rem 0.5rem 2.25rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+  padding: 0.25rem 0;
+}
+
+.sidebar-submenu-item {
+  list-style: none;
+}
+
+.sidebar-submenu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  margin-left: -1px; /* se sobrepone al border-left del ul */
+  color: #888;
+  text-decoration: none;
+  font-size: 0.85rem;
+  border-left: 2px solid transparent;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  border-radius: 0 6px 6px 0;
+}
+
+.sidebar-submenu-link:hover {
+  color: #d0d0d0;
+  background-color: rgba(255, 255, 255, 0.07);
+  border-left-color: rgba(255, 255, 255, 0.35);
+}
+
+.sidebar-submenu-item.active .sidebar-submenu-link {
+  color: #5ba8ff;
+  background-color: rgba(13, 110, 253, 0.12);
+  border-left-color: #5ba8ff;
+  font-weight: 500;
+}
+
+.sidebar-submenu-bullet {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-submenu-link:hover .sidebar-submenu-bullet {
+  opacity: 0.9;
+}
+
+.sidebar-submenu-item.active .sidebar-submenu-link .sidebar-submenu-bullet {
+  opacity: 1;
+}
+
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

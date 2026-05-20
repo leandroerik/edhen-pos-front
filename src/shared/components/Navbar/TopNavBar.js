@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import './TopNavBar.css';
 
@@ -68,6 +68,21 @@ const TopNavBar = ({ isCollapsed, onToggleSidebar }) => {
               TPV
             </button>
           </li>
+
+          {/* Botón Cajas */}
+          {isAdmin && (
+            <li style={{ listStyle: 'none' }}>
+              <button 
+                className="btn btn-warning btn-sm text-dark"
+                onClick={() => navigate('/cajas')}
+                title="Abrir Caja"
+                style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.6rem' }}
+              >
+                <i className="fa fa-boxes me-1"></i>
+                Caja
+              </button>
+            </li>
+          )}
 
           {/* Carrito */}
           <li style={{ listStyle: 'none' }}>
@@ -162,9 +177,9 @@ const TopNavBar = ({ isCollapsed, onToggleSidebar }) => {
                   </small>
                 </div>
                 <divider className="dropdown-divider"></divider>
-                <a className="dropdown-item" href="/">
+                <Link className="dropdown-item" to="/mi-perfil">
                   <i className="fa fa-user me-2"></i>Mi Perfil
-                </a>
+                </Link>
                 <a className="dropdown-item" href="/configuracion/opciones">
                   <i className="fa fa-cog me-2"></i>Opciones
                 </a>

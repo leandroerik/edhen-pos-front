@@ -5,17 +5,13 @@ import Devoluciones from './pages/Devoluciones';
 import TPVTienda from './components/TPVTienda';
 import { VENTAS_SECTIONS } from './utils/ventasConfig';
 
-/**
- * Componente principal de Ventas
- * @component
- */
 const Ventas = () => {
   const [seccionActual, setSeccionActual] = useState('tpv');
 
   const sectionComponents = {
-    tpv: TPVTienda,
-    historial: VentasHistorial,
-    devoluciones: Devoluciones
+    tpv:          TPVTienda,
+    historial:    VentasHistorial,
+    devoluciones: Devoluciones,
   };
 
   const ComponenteActual = sectionComponents[seccionActual];
@@ -34,28 +30,22 @@ const Ventas = () => {
 
       <div className={`mb-4 ${styles.secciones}`}>
         <div className="btn-group" role="group">
-          {Object.entries(VENTAS_SECTIONS).map(([key, label]) => (
+          {VENTAS_SECTIONS.map((seccion) => (
             <button
-              key={key}
-              className={`btn ${seccionActual === key ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setSeccionActual(key)}
-              disabled={!sectionComponents[key]}
+              key={seccion.id}
+              className={`btn ${seccionActual === seccion.id ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setSeccionActual(seccion.id)}
             >
-              <i className={`fa ${key === 'tpv' ? 'fa-cash-register' : key === 'historial' ? 'fa-history' : 'fa-undo'} me-2`}></i>
-              {key === 'tpv' ? 'TPV Tienda' : key === 'historial' ? 'Historial' : 'Devoluciones y Fallas'}
+              <i className={`fa ${seccion.icon} me-2`}></i>
+              {seccion.label}
             </button>
           ))}
         </div>
       </div>
 
       <div className={styles.contenido}>
-        {ComponenteActual ? <ComponenteActual /> : (
-          <div className="alert alert-info">
-            <i className="fa fa-info-circle me-2"></i>
-            Sección: <strong>{seccionActual}</strong> - En desarrollo
-          </div>
-        )}
-      </div>np
+        <ComponenteActual />
+      </div>
     </div>
   );
 };

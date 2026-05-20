@@ -52,7 +52,29 @@ const TPVOnlineShippingForm = ({
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleChange}
-                  placeholder="Nombre completo"
+                  placeholder="Nombre"
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Apellido</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="apellido"
+                  value={formData.apellido || ''}
+                  onChange={handleChange}
+                  placeholder="Apellido"
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">DNI</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="dni"
+                  value={formData.dni || ''}
+                  onChange={handleChange}
+                  placeholder="DNI / CUIT"
                 />
               </div>
               <div className="col-md-6">
@@ -78,12 +100,23 @@ const TPVOnlineShippingForm = ({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Ciudad</label>
+                <label className="form-label fw-semibold">Ciudad / Localidad</label>
                 <input
                   type="text"
                   className="form-control"
                   name="ciudad"
                   value={formData.ciudad}
+                  onChange={handleChange}
+                  placeholder="Ej: Buenos Aires"
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Provincia</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="provincia"
+                  value={formData.provincia || ''}
                   onChange={handleChange}
                   placeholder="Ej: Buenos Aires"
                 />

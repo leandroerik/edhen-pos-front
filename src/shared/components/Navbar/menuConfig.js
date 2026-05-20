@@ -7,87 +7,103 @@ export const MENU_ITEMS = [
     id: 'dashboard',
     label: 'Panel de Control',
     icon: 'fa-tachometer-alt',
-    path: '/'
+    path: '/',
+    roles: ['admin']
   },
   {
     id: 'catalogo',
     label: 'Catálogo',
     icon: 'fa-cube',
+    roles: ['admin'],
     submenu: [
-      { label: 'Categorías', path: '/catalogo/categorias' },
-      { label: 'Productos', path: '/catalogo/productos' },
-      { label: 'Atributos', path: '/catalogo/atributos' },
-      { label: 'Ofertas', path: '/catalogo/ofertas' }
+      { label: 'Categorías', path: '/catalogo/categorias', roles: ['admin'] },
+      { label: 'Productos', path: '/catalogo/productos', roles: ['admin'] },
+      { label: 'Atributos', path: '/catalogo/atributos', roles: ['admin'] },
+      { label: 'Ofertas', path: '/catalogo/ofertas', roles: ['admin'] }
     ]
   },
   {
     id: 'ventas',
     label: 'Ventas',
     icon: 'fa-shopping-cart',
+    roles: ['admin', 'vendedor'],
     submenu: [
-      { label: 'Ventas en Tienda', path: '/ventas/tienda' },
-      { label: 'Historial de Ventas', path: '/ventas/historial' },
-      { label: 'Devoluciones y Fallas', path: '/devoluciones' }
+      { label: 'Ventas en Tienda', path: '/ventas/tienda', roles: ['admin', 'vendedor'] },
+      { label: 'Historial de Ventas', path: '/ventas/historial', roles: ['admin', 'vendedor'] },
+      { label: 'Devoluciones y Fallas', path: '/devoluciones', roles: ['admin', 'vendedor'] }
     ]
   },
   {
     id: 'venta-online',
     label: 'Venta Online',
     icon: 'fa-globe',
+    roles: ['admin'],
     submenu: [
-      { label: 'Nuevo Pedido', path: '/venta-online/nuevo' },
-      { label: 'Gestor de Pedidos', path: '/venta-online/gestor' },
-      { label: 'Pendientes', path: '/venta-online/pendientes' },
-      { label: 'En Proceso', path: '/venta-online/proceso' },
-      { label: 'Historial', path: '/venta-online/historial' }
+      { label: 'Nuevo Pedido', path: '/venta-online/nuevo', roles: ['admin'] },
+      { label: 'Gestor de Pedidos', path: '/venta-online/gestor', roles: ['admin'] },
+      { label: 'Transportes', path: '/venta-online/transportes', roles: ['admin'] },
+      { label: 'Historial', path: '/venta-online/historial', roles: ['admin'] }
     ]
   },
   {
     id: 'cajas',
     label: 'Cajas',
     icon: 'fa-cash-register',
-    path: '/cajas'
+    path: '/cajas',
+    roles: ['admin']
   },
   {
     id: 'clientes',
     label: 'Clientes',
     icon: 'fa-users',
-    path: '/clientes'
+    path: '/clientes',
+    roles: ['admin']
   },
   {
     id: 'vendedores',
     label: 'Vendedores',
     icon: 'fa-user-tie',
-    path: '/vendedores'
+    path: '/vendedores',
+    roles: ['admin']
   },
   {
     id: 'informes',
     label: 'Informes',
     icon: 'fa-chart-bar',
+    roles: ['admin'],
     submenu: [
-      { label: 'Ventas', path: '/informes/ventas' },
-      { label: 'Devoluciones', path: '/informes/devoluciones' },
-      { label: 'Productos Vendidos', path: '/informes/productos-vendidos' },
-      { label: 'Productos Devueltos', path: '/informes/productos-devueltos' },
-      { label: 'Categorías Vendidas', path: '/informes/categorias-vendidas' },
-      { label: 'Categorías Devueltas', path: '/informes/categorias-devueltas' },
-      { label: 'Vendedores', path: '/informes/vendedores' }
+      { label: 'Ventas', path: '/informes/ventas', roles: ['admin'] },
+      { label: 'Devoluciones', path: '/informes/devoluciones', roles: ['admin'] },
+      { label: 'Productos Vendidos', path: '/informes/productos-vendidos', roles: ['admin'] },
+      { label: 'Productos Devueltos', path: '/informes/productos-devueltos', roles: ['admin'] },
+      { label: 'Categorías Vendidas', path: '/informes/categorias-vendidas', roles: ['admin'] },
+      { label: 'Categorías Devueltas', path: '/informes/categorias-devueltas', roles: ['admin'] },
+      { label: 'Vendedores', path: '/informes/vendedores', roles: ['admin'] }
     ]
   },
   {
     id: 'configuracion',
     label: 'Configuración',
     icon: 'fa-cog',
+    roles: ['admin'],
     submenu: [
-      { label: 'Opciones', path: '/configuracion/opciones' },
-      { label: 'Impresión', path: '/configuracion/impresion' },
-      { label: 'Tienda Online', path: '/configuracion/tienda-online' },
-      { label: 'Importar Productos', path: '/configuracion/importar/productos' },
-      { label: 'Importar Ventas', path: '/configuracion/importar/ventas' }
+      { label: 'Parámetros', path: '/configuracion/parametros', roles: ['admin'] },
+      { label: 'Google Sheets', path: '/configuracion/google-sheets', roles: ['admin'] },
+      { label: 'Integraciones', path: '/configuracion/integraciones', roles: ['admin'] },
+      { label: 'Empresa', path: '/configuracion/empresa', roles: ['admin'] },
+      { label: 'Impuestos e IVA', path: '/configuracion/impuestos', roles: ['admin'] },
+      { label: 'Métodos de Pago', path: '/configuracion/pagos', roles: ['admin'] },
+      { label: 'Notificaciones', path: '/configuracion/notificaciones', roles: ['admin'] },
+      { label: 'Inventario', path: '/configuracion/inventario', roles: ['admin'] },
+      { label: 'Restaurar Backup', path: '/configuracion/importar-bd', roles: ['admin'] },
+      { label: 'Crear Backup', path: '/configuracion/exportar-bd', roles: ['admin'] }
     ]
   },
   {
-    id: 'cuenta',
-    label: 'Cuenta Catinfog',
+    id: 'mi-perfil',
+    label: 'Mi Perfil',
     icon: 'fa-user-circle',
-    path: '/cuenta-catinfog
+    path: '/mi-perfil',
+    roles: ['admin', 'vendedor']
+  }
+];

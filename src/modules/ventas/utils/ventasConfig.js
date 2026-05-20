@@ -1,34 +1,23 @@
-/**
- * Configuración centralizada de Ventas
- */
-
-export const VENTAS_SECTIONS = {
-  tpv: 'tpv',
-  historial: 'historial',
-  devoluciones: 'devoluciones'
-};
+export const VENTAS_SECTIONS = [
+  { id: 'tpv',          label: 'TPV Tienda',           icon: 'fa-cash-register' },
+  { id: 'historial',    label: 'Historial',             icon: 'fa-history'       },
+  { id: 'devoluciones', label: 'Devoluciones y Fallas', icon: 'fa-undo'          },
+];
 
 export const ESTADO_VENTA = {
-  COMPLETADA: 'completada',
-  PENDIENTE: 'pendiente',
-  DEVUELTA: 'devuelta',
-  CANCELADA: 'cancelada'
+  COMPLETADA: 'Completada',
+  PENDIENTE:  'Pendiente',
+  DEVUELTA:   'Devuelta',
+  CANCELADA:  'Cancelada',
 };
 
 export const METODO_PAGO = {
-  EFECTIVO: 'efectivo',
-  TARJETA: 'tarjeta',
-  TRANSFERENCIA: 'transferencia',
-  CHEQUE: 'cheque'
+  EFECTIVO:      'Efectivo',
+  TARJETA:       'Tarjeta',
+  TRANSFERENCIA: 'Transferencia',
+  CHEQUE:        'Cheque',
 };
 
 export const VENTAS_CONFIG = {
   defaultPageSize: 10,
-  columnas: [
-    { key: 'numero', label: 'Número', width: '15%' },
-    { key: 'fecha', label: 'Fecha', width: '20%' },
-    { key: 'cliente', label: 'Cliente', width: '25%' },
-    { key: 'total', label: 'Total', width: '15%' },
-    { key: 'estado', label: 'Estado', width: '15%' }
-  ]
 };

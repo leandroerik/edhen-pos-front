@@ -1,201 +1,228 @@
-/**
- * Componente Form para Ofertas
- * Formulario modal para crear/editar ofertas
- */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { variantLabel } from '../variantHelpers';
 
-export const OffersForm = ({ 
-  editingId, 
-  formData, 
-  setFormData, 
-  errors, 
+const OffersForm = ({
+  editingId,
+  formData,
+  onChange,
+  errors,
   products = [],
-  onSave, 
-  onCancel 
+  onSave,
+  onCancel,
+  loading,
 }) => {
+  const selectedProduct = products.find((p) => p.id === Number(formData.productoId));
+  const hasVariants = selectedProduct?.variants?.length > 0;
+
+  const actionsRef = useRef({});
+  actionsRef.current = { onSave, onCancel, formData, loading };
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { loading, onCancel, onSave, formData } = actionsRef.current;
+      if (loading) return;
+      if (e.key === 'Escape') { onCancel(); return; }
+      if (e.key === 'Enter' && !e.defaultPrevented && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+        onSave(formData);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  const allErrors = errors || {};
+
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+    <div
+      className="modal d-block"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      onClick={onCancel}
+    >
+      <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-content">
-          <div className="modal-header bg-light border-bottom">
+
+          <div className="modal-header border-bottom">
             <h5 className="modal-title fw-bold">
               <i className={`fa ${editingId ? 'fa-edit' : 'fa-plus'} me-2`}></i>
               {editingId ? 'Editar Oferta' : 'Nueva Oferta'}
             </h5>
-            <button 
-              className="btn-close"
-              onClick={onCancel}
-            />
+            <button className="btn-close" onClick={onCancel} disabled={loading} />
           </div>
+
           <div className="modal-body p-4">
-            <div className="mb-4">
+
+            <div className="mb-3">
               <label className="form-label fw-semibold">Nombre *</label>
               <input
                 type="text"
-                className={`form-control form-control-lg ${errors.nombre ? 'is-invalid' : ''}`}
-                value={formData.nombre}
-                onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                className={`form-control ${allErrors.nombre ? 'is-invalid' : ''}`}
+                value={formData.nombre || ''}
+                onChange={(e) => onChange('nombre', e.target.value)}
+                placeholder="Ej: Liquidación fin de temporada"
+                disabled={loading}
+                autoFocus
               />
-              {errors.nombre && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.nombre}</div>}
+              {allErrors.nombre && <div className="invalid-feedback d-block">{allErrors.nombre}</div>}
             </div>
 
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="form-label fw-semibold">Descripción</label>
               <textarea
-                className="form-control form-control-lg"
+                className="form-control"
                 rows="2"
-                value={formData.descripcion}
-                onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                value={formData.descripcion || ''}
+                onChange={(e) => onChange('descripcion', e.target.value)}
+                placeholder="Descripción opcional de la oferta"
+                disabled={loading}
               />
             </div>
 
-            <div className="row g-3">
-              <div className="col-md-6">
+            <div className="row g-3 mb-3">
+              <div className={hasVariants ? 'col-md-6' : 'col-12'}>
                 <label className="form-label fw-semibold">Producto *</label>
                 <select
-                  className={`form-select form-select-lg ${errors.productoId ? 'is-invalid' : ''}`}
-                  value={formData.productoId}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    productoId: e.target.value,
-                    varianteId: ''
-                  })}
+                  className={`form-select ${allErrors.productoId ? 'is-invalid' : ''}`}
+                  value={formData.productoId || ''}
+                  onChange={(e) => onChange('productoId', e.target.value)}
+                  disabled={loading}
                 >
-                  <option value="">Selecciona un producto</option>
-                  {products.map(product => (
-                    <option key={product.id} value={product.id}>
-                      {product.nombre}
-                    </option>
+                  <option value="">Seleccioná un producto…</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
                 </select>
-                {errors.productoId && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.productoId}</div>}
+                {allErrors.productoId && <div className="invalid-feedback d-block">{allErrors.productoId}</div>}
               </div>
 
-              {products.find(p => p.id === Number(formData.productoId))?.variants?.length > 0 && (
+              {hasVariants && (
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">Variante *</label>
                   <select
-                    className={`form-select form-select-lg ${errors.varianteId ? 'is-invalid' : ''}`}
-                    value={formData.varianteId}
-                    onChange={(e) => setFormData({ ...formData, varianteId: e.target.value })}
+                    className={`form-select ${allErrors.varianteId ? 'is-invalid' : ''}`}
+                    value={formData.varianteId || ''}
+                    onChange={(e) => onChange('varianteId', e.target.value)}
+                    disabled={loading}
                   >
-                    <option value="">Selecciona una variante</option>
-                    {products.find(p => p.id === Number(formData.productoId))?.variants?.map(variant => (
-                      <option key={variant.variantId} value={variant.variantId}>
-                        {Object.entries(variant)
-                          .filter(([key]) => !['variantId', 'productoId', 'stock', 'precio'].includes(key))
-                          .map(([key, value]) => `${key}: ${value}`)
-                          .join(' / ')}
+                    <option value="">Seleccioná una variante…</option>
+                    {selectedProduct.variants.map((v) => (
+                      <option key={v.variantId} value={v.variantId}>
+                        {variantLabel(v)}
                       </option>
                     ))}
                   </select>
-                  {errors.varianteId && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.varianteId}</div>}
+                  {allErrors.varianteId && <div className="invalid-feedback d-block">{allErrors.varianteId}</div>}
                 </div>
               )}
             </div>
 
-            <div className="row g-3">
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Monto Descuento *</label>
+            <div className="row g-3 mb-3">
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Descuento</label>
                 <input
                   type="number"
-                  className={`form-control form-control-lg ${errors.descuento ? 'is-invalid' : ''}`}
-                  value={formData.descuento}
-                  onChange={(e) => setFormData({...formData, descuento: e.target.value})}
+                  className="form-control"
+                  value={formData.descuento ?? ''}
+                  onChange={(e) => onChange('descuento', e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  disabled={loading}
                 />
-                {errors.descuento && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.descuento}</div>}
               </div>
-
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <label className="form-label fw-semibold">Tipo</label>
                 <select
-                  className="form-select form-select-lg"
-                  value={formData.tipoDescuento}
-                  onChange={(e) => setFormData({...formData, tipoDescuento: e.target.value})}
+                  className="form-select"
+                  value={formData.tipoDescuento || 'porcentaje'}
+                  onChange={(e) => onChange('tipoDescuento', e.target.value)}
+                  disabled={loading}
                 >
                   <option value="porcentaje">Porcentaje (%)</option>
                   <option value="monto">Monto ($)</option>
                 </select>
               </div>
-
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Precio de Oferta</label>
-                <div className="input-group input-group-lg">
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Precio Oferta *</label>
+                <div className="input-group">
                   <span className="input-group-text">$</span>
                   <input
                     type="number"
-                    className={`form-control ${errors.precioOferta ? 'is-invalid' : ''}`}
-                    value={formData.precioOferta}
-                    onChange={(e) => setFormData({...formData, precioOferta: e.target.value})}
+                    className={`form-control ${allErrors.precioOferta ? 'is-invalid' : ''}`}
+                    value={formData.precioOferta || ''}
+                    onChange={(e) => onChange('precioOferta', e.target.value)}
+                    placeholder="0.00"
                     min="0"
                     step="0.01"
+                    disabled={loading}
                   />
                 </div>
-                {errors.precioOferta && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.precioOferta}</div>}
+                {allErrors.precioOferta && <div className="invalid-feedback d-block">{allErrors.precioOferta}</div>}
               </div>
+            </div>
 
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Stock en Oferta</label>
+            <div className="row g-3 mb-3">
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Stock en oferta</label>
                 <input
                   type="number"
-                  className={`form-control form-control-lg ${errors.stockOferta ? 'is-invalid' : ''}`}
-                  value={formData.stockOferta}
-                  onChange={(e) => setFormData({...formData, stockOferta: e.target.value})}
+                  className="form-control"
+                  value={formData.stockOferta || ''}
+                  onChange={(e) => onChange('stockOferta', e.target.value)}
+                  placeholder="Sin límite"
                   min="0"
-                />
-                {errors.stockOferta && <div className="invalid-feedback d-block mt-2"><i className="fa fa-exclamation-circle me-2"></i>{errors.stockOferta}</div>}
-              </div>
-
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Fecha Inicio</label>
-                <input
-                  type="date"
-                  className="form-control form-control-lg"
-                  value={formData.fechaInicio}
-                  onChange={(e) => setFormData({...formData, fechaInicio: e.target.value})}
+                  disabled={loading}
                 />
               </div>
-
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Fecha Fin</label>
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Fecha inicio</label>
                 <input
                   type="date"
-                  className="form-control form-control-lg"
-                  value={formData.fechaFin}
-                  onChange={(e) => setFormData({...formData, fechaFin: e.target.value})}
+                  className="form-control"
+                  value={formData.fechaInicio || ''}
+                  onChange={(e) => onChange('fechaInicio', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Fecha fin</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={formData.fechaFin || ''}
+                  onChange={(e) => onChange('fechaFin', e.target.value)}
+                  disabled={loading}
                 />
               </div>
             </div>
 
-            <div className="form-check form-switch mt-4">
+            <div className="form-check form-switch">
               <input
                 className="form-check-input"
                 type="checkbox"
-                id="activo"
-                checked={formData.activo}
-                onChange={(e) => setFormData({...formData, activo: e.target.checked})}
+                id="ofertaActiva"
+                checked={formData.activo ?? true}
+                onChange={(e) => onChange('activo', e.target.checked)}
+                disabled={loading}
               />
-              <label className="form-check-label fw-semibold" htmlFor="activo">
-                Oferta Activa
+              <label className="form-check-label" htmlFor="ofertaActiva">
+                {formData.activo ? 'Activa' : 'Inactiva'}
               </label>
             </div>
+
           </div>
-          <div className="modal-footer bg-light border-top">
-            <button 
-              className="btn btn-secondary"
-              onClick={onCancel}
-            >
-              <i className="fa fa-times me-2"></i>
-              Cancelar
+
+          <div className="modal-footer border-top">
+            <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+              <i className="fa fa-times me-2"></i>Cancelar
             </button>
-            <button 
-              className="btn btn-primary"
-              onClick={onSave}
-            >
-              <i className="fa fa-save me-2"></i>
-              Guardar
+            <button className="btn btn-primary ms-auto" onClick={() => onSave(formData)} disabled={loading}>
+              {loading ? (
+                <><span className="spinner-border spinner-border-sm me-2"></span>Guardando…</>
+              ) : (
+                <><i className="fa fa-save me-2"></i>Guardar</>
+              )}
             </button>
           </div>
+
         </div>
       </div>
     </div>

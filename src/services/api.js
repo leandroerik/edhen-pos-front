@@ -9,8 +9,11 @@ import {
   mockCategoriaService,
   mockAtributoService,
   mockUsuarioService,
-  mockDevolucionService
+  mockDevolucionService,
+  mockTransportesService,
+  mockPedidosOnlineService
 } from './mocks';
+import { adminService } from './adminService';
 
 const api = axios.create({
   baseURL: '/',
@@ -39,5 +42,11 @@ export const atributoService = mockAtributoService;
 export const usuarioService = mockUsuarioService;
 
 export const devolucionService = mockDevolucionService;
+
+export const transportesService = mockTransportesService;
+
+export const pedidosOnlineService = mockPedidosOnlineService;
+
+export { adminService };
 
 export default api;

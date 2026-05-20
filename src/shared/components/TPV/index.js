@@ -6,5 +6,6 @@ export { default as TPVProductCard } from './TPVProductCard';
 export { default as TPVVariantModal } from './TPVVariantModal';
 export { default as TPVOnlineOrderSidebar } from './TPVOnlineOrderSidebar';
 export { default as TPVOnlineShippingForm } from './TPVOnlineShippingForm';
+export { default as TPVShippingDetailsForm } from './TPVShippingDetailsForm';
 
 export * from './TPVUtils';

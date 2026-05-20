@@ -45,6 +45,35 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify({ ...user, ...userData }));
   };
 
+  const permissionsByRole = {
+    admin: {
+      dashboard: true,
+      catalogo: true,
+      clientes: true,
+      ventas: true,
+      ventaOnline: true,
+      cajas: true,
+      vendedores: true,
+      informes: true,
+      configuracion: true
+    },
+    vendedor: {
+      dashboard: false,
+      catalogo: false,
+      clientes: false,
+      ventas: true,
+      ventaOnline: false,
+      cajas: false,
+      vendedores: false,
+      informes: false,
+      configuracion: false
+    }
+  };
+
+  const permissions = permissionsByRole[user?.role] || {};
+
+  const canAccess = (resource) => !!permissions[resource];
+
   const value = {
     user,
     loading,
@@ -53,7 +82,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     isAdmin: user?.role === 'admin',
-    isVendedor: user?.role === 'vendedor'
+    isVendedor: user?.role === 'vendedor',
+    permissions,
+    canAccess
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

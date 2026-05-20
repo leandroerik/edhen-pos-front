@@ -7,7 +7,8 @@ const TPVClientPicker = ({
   busquedaCliente,
   onBusquedaClienteChange,
   onSelectCliente,
-  onClose
+  onClose,
+  onSelectGenericClient
 }) => {
   if (!show) return null;
 
@@ -31,6 +32,14 @@ const TPVClientPicker = ({
                   {cliente.nombre}
                 </button>
               ))}
+              <button
+                type="button"
+                className="btn btn-outline-info flex-fill"
+                onClick={onSelectGenericClient}
+              >
+                <i className="fa fa-user-plus me-1"></i>
+                Cliente Genérico
+              </button>
             </div>
             <input
               type="text"

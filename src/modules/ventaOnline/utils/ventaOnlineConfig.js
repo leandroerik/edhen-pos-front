@@ -3,10 +3,11 @@
  */
 
 export const VENTA_ONLINE_SECTIONS = {
-  tpv: 'tpv',
+  nuevo: 'nuevo',
+  gestor: 'gestor',
   pendientes: 'pendientes',
   proceso: 'proceso',
-  entregadas: 'entregadas'
+  historial: 'historial'
 };
 
 export const ESTADO_PEDIDO_ONLINE = {

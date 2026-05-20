@@ -1,658 +1,509 @@
-/**
- * Componente Form para Productos
- * Formulario simple, dinámico y profesional
- */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import ProductVariantsTable from './ProductVariantsTable';
 import { generateBarcode, formatBarcode } from '../../utils/barcodeGenerator';
-import { toast } from 'react-hot-toast';
 
-export const ProductsForm = ({ 
-  editingId, 
-  formData, 
-  setFormData, 
-  errors, 
-  onSave, 
+export const FORM_INICIAL = {
+  nombre:          '',
+  descripcion:     '',
+  categoriaId:     '',
+  precioBase:      '',
+  codigoBarras:    '',
+  atributosUsados: [],
+  variants:        [],
+  activo:          true,
+};
+
+const StepIndicator = ({ step }) => (
+  <div className="d-flex align-items-center gap-2 mb-4">
+    <div className={`d-flex align-items-center gap-2 ${step === 1 ? 'text-primary' : 'text-success'}`}>
+      <div
+        className={`rounded-circle d-flex align-items-center justify-content-center fw-bold ${
+          step > 1 ? 'bg-success text-white' : 'bg-primary text-white'
+        }`}
+        style={{ width: 28, height: 28, fontSize: '0.8rem', flexShrink: 0 }}
+      >
+        {step > 1 ? <i className="fa fa-check" /> : '1'}
+      </div>
+      <span className="small fw-semibold">Información</span>
+    </div>
+
+    <div className="flex-grow-1 border-top mx-2" />
+
+    <div className={`d-flex align-items-center gap-2 ${step === 2 ? 'text-primary' : 'text-muted'}`}>
+      <div
+        className={`rounded-circle d-flex align-items-center justify-content-center fw-bold ${
+          step === 2 ? 'bg-primary text-white' : 'border text-muted bg-white'
+        }`}
+        style={{ width: 28, height: 28, fontSize: '0.8rem', flexShrink: 0 }}
+      >
+        2
+      </div>
+      <span className="small fw-semibold">Stock y variantes</span>
+    </div>
+  </div>
+);
+
+const ProductsForm = ({
+  editingId,
+  formData,
+  onChange,
+  errors,
+  onSave,
   onCancel,
+  loading,
   attributes = [],
   categories = [],
-  initialVariants = [],
-  onVariantStockChange,
-  onVariantPriceChange
 }) => {
-  const [selectedAttributes, setSelectedAttributes] = useState([]); // Array de { id, values }
-  const [variants, setVariants] = useState([]); // Variantes generadas
-  const [stockGeneral, setStockGeneral] = useState(0); // Para productos sin atributos
-  const [isLoading, setIsLoading] = useState(false); // Control de carga
-  const [selectedAttrIdForAdd, setSelectedAttrIdForAdd] = useState(''); // Dropdown selector atributo
-  const [selectedAttrValuesForAdd, setSelectedAttrValuesForAdd] = useState([]); // Valores seleccionados del nuevo atributo
-  const [editingAttrId, setEditingAttrId] = useState(null); // Tag siendo editado
+  const [step,               setStep]               = useState(1);
+  const [stepErrors,         setStepErrors]         = useState({});
+  const [selectedAttributes, setSelectedAttributes] = useState([]);
+  const [variants,           setVariants]           = useState([]);
+  const [stockGeneral,       setStockGeneral]       = useState(0);
 
-  console.log('ProductsForm - Atributos recibidos:', attributes); // DEBUG
-  console.log('ProductsForm - editingId:', editingId); // DEBUG
-  console.log('ProductsForm - formData:', formData); // DEBUG
-
-  // Cargar datos al editar un producto existente O cuando cambian los props
+  // Init / reset al abrir modal
   useEffect(() => {
-    setIsLoading(true);
-    console.log('📋 ProductsForm useEffect - editingId:', editingId, 'initialVariants:', initialVariants?.length || 0);
-    
-    // Si NO hay editingId, es un NUEVO PRODUCTO - resetear todo
+    setStep(1);
+    setStepErrors({});
+
     if (!editingId) {
-      console.log('ℹ NUEVO PRODUCTO - reseteando estado');
       setSelectedAttributes([]);
       setVariants([]);
       setStockGeneral(0);
-      setSelectedAttrIdForAdd('');
-      setSelectedAttrValuesForAdd([]);
-      setEditingAttrId(null);
-    } 
-    // Si hay editingId, es EDITAR - cargar datos
-    else if (editingId && formData && Object.keys(formData).length > 0) {
-      console.log('=== INICIANDO CARGA DE PRODUCTO PARA EDITAR ===');
-      console.log('✓ editingId:', editingId);
-      console.log('✓ initialVariants:', initialVariants?.length || 0);
-      
-      // Prioridad: initialVariants (del hook) > formData.variants (del estado)
-      const variantsToUse = initialVariants && initialVariants.length > 0 
-        ? initialVariants 
-        : (formData.variants || []);
-      
-      // Cargar variantes si existen
-      if (variantsToUse.length > 0) {
-        console.log('✓ Variantes encontradas:', variantsToUse.length);
-        setVariants(variantsToUse);
-        
-        // Reconstruir los atributos seleccionados desde las variantes
-        if (formData.atributosUsados && Array.isArray(formData.atributosUsados) && formData.atributosUsados.length > 0) {
-          console.log('✓ Atributos a reconstruir:', formData.atributosUsados);
-          
-          const reconstructedAttrs = formData.atributosUsados.map(attrName => {
-            const attr = attributes.find(a => a.nombre === attrName);
-            if (!attr) {
-              console.warn('✗ Atributo no encontrado:', attrName);
-              return null;
-            }
-            
-            // Extraer valores únicos de las variantes para este atributo
-            const values = [...new Set(variantsToUse.map(v => v[attrName]).filter(Boolean))];
-            console.log(`✓ Valores para "${attrName}":`, values);
-            
-            return { id: attr.id, values };
-          }).filter(Boolean);
-          
-          console.log('✓ Atributos reconstruidos:', reconstructedAttrs);
-          setSelectedAttributes(reconstructedAttrs);
-        }
-      } else if (formData.stockGeneral !== undefined && formData.stockGeneral !== null) {
-        console.log('✓ Stock general encontrado:', formData.stockGeneral);
-        setStockGeneral(formData.stockGeneral || 0);
-        setSelectedAttributes([]); // Sin atributos
-        setVariants([]);
-      }
-    }
-    
-    setIsLoading(false);
-  }, [editingId, initialVariants]);
-
-  const handleAddAttribute = (attrId) => {
-    if (!attrId || selectedAttrValuesForAdd.length === 0) return; // Debe haber valores seleccionados
-    const attr = attributes.find(a => a.id === parseInt(attrId));
-    if (attr) {
-      const newAttributes = [...selectedAttributes, { id: attr.id, values: selectedAttrValuesForAdd }];
-      setSelectedAttributes(newAttributes);
-      
-      // IMPORTANTE: Generar variantes inmediatamente con los nuevos atributos
-      setTimeout(() => {
-        generateVariantsFromSelected(newAttributes);
-      }, 0);
-      
-      setSelectedAttrIdForAdd(''); // Limpiar selector
-      setSelectedAttrValuesForAdd([]); // Limpiar valores
-    }
-  };
-
-  const handleRemoveAttribute = (attrId) => {
-    const newAttributes = selectedAttributes.filter(sa => sa.id !== attrId);
-    setSelectedAttributes(newAttributes);
-    
-    // Regenerar variantes con los atributos restantes
-    if (newAttributes.length > 0) {
-      // Si aún hay atributos, regenera las variantes
-      generateVariantsFromSelected(newAttributes);
-    } else {
-      // Si no hay atributos, limpiar variantes
-      setVariants([]);
-    }
-  };
-
-  const handleUpdateAttributeValues = (attrId, values) => {
-    const updated = selectedAttributes.map(sa =>
-      sa.id === attrId ? { ...sa, values } : sa
-    );
-    setSelectedAttributes(updated);
-    // AUTO-Regenerar variantes cuando cambian valores
-    generateVariantsFromSelected(updated);
-  };
-
-  const handleVariantStockChange = (variantId, stock) => {
-    setVariants(prev =>
-      prev.map(v =>
-        v.variantId === variantId ? { ...v, stock } : v
-      )
-    );
-  };
-
-  const handleVariantPriceChange = (variantId, precio) => {
-    setVariants(prev =>
-      prev.map(v =>
-        v.variantId === variantId ? { ...v, precio } : v
-      )
-    );
-  };
-
-  const generateVariantsFromSelected = (attrs) => {
-    const hasValidSelection = attrs.every(a => a.values?.length > 0);
-    
-    if (!hasValidSelection || attrs.length === 0) {
-      setVariants([]);
       return;
     }
 
-    // Construir mapa de valores por nombre de atributo
-    const attrMap = {};
-    attrs.forEach(a => {
-      const attr = attributes.find(x => x.id === a.id);
-      if (attr) {
-        attrMap[attr.nombre] = a.values;
-      }
-    });
+    const savedVariants = formData.variants || [];
+    if (savedVariants.length > 0) {
+      setVariants(savedVariants);
+      const reconstructed = (formData.atributosUsados || [])
+        .map((attrName) => {
+          const attr = attributes.find((a) => a.nombre === attrName);
+          if (!attr) return null;
+          const values = [...new Set(savedVariants.map((v) => v[attrName]).filter(Boolean))];
+          return { id: attr.id, values };
+        })
+        .filter(Boolean);
+      setSelectedAttributes(reconstructed);
+    } else {
+      setStockGeneral(formData.stockGeneral || 0);
+      setSelectedAttributes([]);
+      setVariants([]);
+    }
+  }, [editingId]);
 
-    // Generar combinaciones cartesianas
-    const generateCombinations = (attrArray, index, current) => {
-      if (index === attrArray.length) {
-        return [{ ...current }];
-      }
-      const [attrName, values] = attrArray[index];
-      const results = [];
-      if (values && values.length > 0) {
-        values.forEach(value => {
-          const newCurrent = { ...current, [attrName]: value };
-          results.push(...generateCombinations(attrArray, index + 1, newCurrent));
-        });
-      }
-      return results;
+  // Si la página devuelve errores de campos del paso 1, volver al paso 1
+  useEffect(() => {
+    const step1Fields = ['nombre', 'descripcion', 'categoriaId', 'precioBase'];
+    if (step === 2 && step1Fields.some((f) => errors[f])) setStep(1);
+  }, [errors]);
+
+  // ── Helpers de atributos ──────────────────────────────────────────────────
+
+  const getValues = (attrId) => {
+    const attr = attributes.find((a) => a.id === attrId);
+    return attr?.valores ? attr.valores.split(',').map((v) => v.trim()) : [];
+  };
+
+  const isAttrSelected = (attrId) => selectedAttributes.some((sa) => sa.id === attrId);
+
+  const getSelectedAttr = (attrId) => selectedAttributes.find((sa) => sa.id === attrId);
+
+  const toggleAttribute = (attr) => {
+    if (isAttrSelected(attr.id)) {
+      const next = selectedAttributes.filter((sa) => sa.id !== attr.id);
+      setSelectedAttributes(next);
+      if (next.length > 0) generateVariants(next);
+      else setVariants([]);
+    } else {
+      const next = [...selectedAttributes, { id: attr.id, values: [] }];
+      setSelectedAttributes(next);
+    }
+  };
+
+  const toggleValue = (attrId, value) => {
+    const next = selectedAttributes.map((sa) => {
+      if (sa.id !== attrId) return sa;
+      const values = sa.values.includes(value)
+        ? sa.values.filter((v) => v !== value)
+        : [...sa.values, value];
+      return { ...sa, values };
+    });
+    setSelectedAttributes(next);
+    generateVariants(next);
+  };
+
+  const generateVariants = (attrs) => {
+    const valid = attrs.filter((a) => a.values.length > 0);
+    if (!valid.length) { setVariants([]); return; }
+
+    const attrMap = valid.map((a) => ({
+      name: attributes.find((x) => x.id === a.id)?.nombre || '',
+      values: a.values,
+    }));
+
+    const combine = (index, current) => {
+      if (index === attrMap.length) return [{ ...current }];
+      return attrMap[index].values.flatMap((v) =>
+        combine(index + 1, { ...current, [attrMap[index].name]: v })
+      );
     };
 
-    const attrArray = Object.entries(attrMap);
-    const combinations = generateCombinations(attrArray, 0, {});
-    
-    const newVariants = combinations.map((combo, idx) => {
-      // Buscar variantes antiguas que coincidan con la nueva combinación
-      // Importante: permitir coincidir incluso si la variante antigua tiene atributos extras
-      const matchingOldVariants = variants.filter(v => {
-        return Object.keys(combo).every(key => v[key] === combo[key]);
-      });
-
-      // Si hay variantes antiguas que coinciden, sumar sus stocks
-      const totalStock = matchingOldVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
-      const basePrice = matchingOldVariants?.[0]?.precio ?? (formData.precioBase || 0);
-
+    const combos = combine(0, {});
+    const newVariants = combos.map((combo, idx) => {
+      const match = variants.find((v) => Object.keys(combo).every((k) => v[k] === combo[k]));
       return {
-        variantId: matchingOldVariants?.[0]?.variantId || `var-${idx}-${Date.now()}`,
+        variantId:  match?.variantId || `var-${idx}-${Date.now()}`,
         productoId: editingId || 'new',
         ...combo,
-        stock: totalStock,
-        precio: basePrice
+        stock:  match?.stock  ?? 0,
+        precio: match?.precio ?? parseFloat(formData.precioBase || 0),
       };
     });
-
     setVariants(newVariants);
   };
 
-  const getAvailableAttributes = () => {
-    const selectedIds = selectedAttributes.map(sa => sa.id);
-    return attributes.filter(a => !selectedIds.includes(a.id));
-  };
+  const handleVariantStock = (variantId, stock) =>
+    setVariants((prev) => prev.map((v) => (v.variantId === variantId ? { ...v, stock } : v)));
 
-  const getAttributeValues = (attrId) => {
-    const attr = attributes.find(a => a.id === attrId);
-    return attr?.valores ? attr.valores.split(',').map(v => v.trim()) : [];
-  };
+  const handleVariantPrice = (variantId, precio) =>
+    setVariants((prev) => prev.map((v) => (v.variantId === variantId ? { ...v, precio } : v)));
 
-  const getAttributeById = (attrId) => {
-    return attributes.find(a => a.id === attrId);
-  };
+  // ── Barcode ───────────────────────────────────────────────────────────────
 
-  const handleGenerateNewBarcode = () => {
-    const newBarcode = generateBarcode();
-    setFormData({ ...formData, codigoBarras: newBarcode });
-    toast.success('Código de barras generado');
-  };
+  const handleGenerateBarcode = () => onChange('codigoBarras', generateBarcode());
 
   const handleCopyBarcode = () => {
     navigator.clipboard.writeText(formData.codigoBarras);
     toast.success('Código copiado al portapapeles');
   };
 
+  // ── Paso 1 → validación local antes de avanzar ────────────────────────────
+
+  const handleNext = () => {
+    const e = {};
+    if (!formData.nombre?.trim())       e.nombre      = 'El nombre es obligatorio';
+    if (!formData.descripcion?.trim())  e.descripcion = 'La descripción es obligatoria';
+    if (!formData.categoriaId)          e.categoriaId = 'La categoría es obligatoria';
+    if (!formData.precioBase || parseFloat(formData.precioBase) < 0)
+      e.precioBase = 'El precio base es inválido';
+    setStepErrors(e);
+    if (Object.keys(e).length === 0) setStep(2);
+  };
+
+  // ── Guardar ───────────────────────────────────────────────────────────────
+
+  const handleGuardar = () => {
+    const finalData = {
+      ...formData,
+      variants,
+      stockGeneral: selectedAttributes.length === 0 ? stockGeneral : undefined,
+      atributosUsados: selectedAttributes
+        .filter((sa) => sa.values.length > 0)
+        .map((sa) => attributes.find((a) => a.id === sa.id)?.nombre)
+        .filter(Boolean),
+    };
+    onSave(finalData);
+  };
+
+  const allErrors = { ...stepErrors, ...errors };
+
+  const actionsRef = useRef({});
+  actionsRef.current = { onCancel, handleNext, handleGuardar, loading, step };
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { loading, onCancel, handleNext, handleGuardar, step } = actionsRef.current;
+      if (loading) return;
+      if (e.key === 'Escape') { onCancel(); return; }
+      if (e.key === 'Enter' && !e.defaultPrevented && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+        if (step === 1) handleNext();
+        else handleGuardar();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: '850px' }}>
+    <div
+      className="modal d-block"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      onClick={onCancel}
+    >
+      <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-content">
-          
-          {/* HEADER */}
-          <div className="modal-header bg-light border-bottom">
+
+          {/* Header */}
+          <div className="modal-header border-bottom">
             <h5 className="modal-title fw-bold">
               <i className={`fa ${editingId ? 'fa-edit' : 'fa-plus'} me-2`}></i>
               {editingId ? 'Editar Producto' : 'Nuevo Producto'}
             </h5>
-            <button 
-              className="btn-close"
-              onClick={onCancel}
-            />
+            <button className="btn-close" onClick={onCancel} disabled={loading} />
           </div>
 
-          {/* BODY */}
-          <div className="modal-body p-4" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {/* Body */}
+          <div className="modal-body p-4">
+            <StepIndicator step={step} />
 
-            {/* ========== SECCIÓN 1: DATOS BÁSICOS ========== */}
-            <div className="mb-4">
-              <h6 className="fw-semibold mb-3" style={{ color: '#495057' }}>
-                <i className="fa fa-info-circle me-2" style={{ color: '#0d6efd' }}></i>
-                Información del Producto
-              </h6>
-
-              {/* Nombre */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Nombre *</label>
-                <input
-                  type="text"
-                  className={`form-control form-control-lg ${errors.nombre ? 'is-invalid' : ''}`}
-                  value={formData.nombre || ''}
-                  onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                  placeholder="Ej: Remera Premium"
-                />
-                {errors.nombre && <div className="invalid-feedback d-block"><i className="fa fa-exclamation-circle me-2"></i>{errors.nombre}</div>}
-              </div>
-
-              {/* Descripción */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Descripción *</label>
-                <textarea
-                  className={`form-control form-control-lg ${errors.descripcion ? 'is-invalid' : ''}`}
-                  rows="2"
-                  value={formData.descripcion || ''}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                  placeholder="Descripción del producto"
-                />
-                {errors.descripcion && <div className="invalid-feedback d-block"><i className="fa fa-exclamation-circle me-2"></i>{errors.descripcion}</div>}
-              </div>
-
-              {/* Row: Categoría y Precio */}
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Categoría *</label>
-                  <select
-                    className={`form-select form-select-lg ${errors.categoriaId ? 'is-invalid' : ''}`}
-                    value={formData.categoriaId || ''}
-                    onChange={(e) => setFormData({...formData, categoriaId: e.target.value})}
-                  >
-                    <option value="">Selecciona una categoría...</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                    ))}
-                  </select>
-                  {errors.categoriaId && <div className="invalid-feedback d-block"><i className="fa fa-exclamation-circle me-2"></i>{errors.categoriaId}</div>}
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Precio Base *</label>
-                  <div className="input-group input-group-lg">
-                    <span className="input-group-text">$</span>
-                    <input
-                      type="number"
-                      className={`form-control ${errors.precioBase ? 'is-invalid' : ''}`}
-                      value={formData.precioBase || ''}
-                      onChange={(e) => setFormData({...formData, precioBase: parseFloat(e.target.value)})}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  {errors.precioBase && <div className="invalid-feedback d-block"><i className="fa fa-exclamation-circle me-2"></i>{errors.precioBase}</div>}
-                </div>
-              </div>
-
-              {/* Row: Código de Barras y Estado */}
-              <div className="row g-3 mt-1">
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Código de Barras</label>
-                  <div className="input-group input-group-lg">
-                    <span className="input-group-text"><i className="fa fa-barcode"></i></span>
-                    <input
-                      type="text"
-                      className="form-control text-center font-monospace"
-                      value={formatBarcode(formData.codigoBarras || '')}
-                      readOnly
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={handleCopyBarcode}
-                      title="Copiar"
-                    >
-                      <i className="fa fa-copy"></i>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={handleGenerateNewBarcode}
-                      title="Generar nuevo"
-                    >
-                      <i className="fa fa-refresh"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Estado</label>
-                  <div className="form-check form-switch pt-2">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="activo"
-                      checked={formData.activo || false}
-                      onChange={(e) => setFormData({...formData, activo: e.target.checked})}
-                    />
-                    <label className="form-check-label fw-semibold" htmlFor="activo">
-                      Producto Activo
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr />
-
-            {/* ========== SECCIÓN 2: ATRIBUTOS ========== */}
-            <div className="card border-0 shadow-sm bg-white mb-4">
-              <div className="card-header bg-white border-bottom border-primary border-2 py-3">
-                <h6 className="mb-0 fw-semibold text-dark">
-                  <i className="fa fa-layer-group me-2 text-primary"></i>
-                  Atributos y Variantes
-                </h6>
-              </div>
-              <div className="card-body p-4">
-                {/* DROPDOWN para agregar atributo + valores */}
+            {/* ── PASO 1: Información ─────────────────────────────────── */}
+            {step === 1 && (
+              <div>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold small text-dark">
-                    <i className="fa fa-plus me-2 text-primary"></i>
-                    Agregar Atributo:
-                  </label>
-                  
-                  {/* Dropdown 1: Seleccionar atributo */}
-                  <div className="input-group mb-2">
+                  <label className="form-label fw-semibold">Nombre *</label>
+                  <input
+                    type="text"
+                    className={`form-control ${allErrors.nombre ? 'is-invalid' : ''}`}
+                    value={formData.nombre || ''}
+                    onChange={(e) => onChange('nombre', e.target.value)}
+                    placeholder="Ej: Remera Básica"
+                    disabled={loading}
+                    autoFocus
+                  />
+                  {allErrors.nombre && <div className="invalid-feedback d-block">{allErrors.nombre}</div>}
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Descripción *</label>
+                  <textarea
+                    className={`form-control ${allErrors.descripcion ? 'is-invalid' : ''}`}
+                    rows="2"
+                    value={formData.descripcion || ''}
+                    onChange={(e) => onChange('descripcion', e.target.value)}
+                    placeholder="Breve descripción del producto"
+                    disabled={loading}
+                  />
+                  {allErrors.descripcion && <div className="invalid-feedback d-block">{allErrors.descripcion}</div>}
+                </div>
+
+                <div className="row g-3 mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Categoría *</label>
                     <select
-                      className="form-select border-primary"
-                      value={selectedAttrIdForAdd}
-                      onChange={(e) => {
-                        setSelectedAttrIdForAdd(e.target.value);
-                        setSelectedAttrValuesForAdd([]); // Limpiar valores al cambiar atributo
-                      }}
+                      className={`form-select ${allErrors.categoriaId ? 'is-invalid' : ''}`}
+                      value={formData.categoriaId || ''}
+                      onChange={(e) => onChange('categoriaId', e.target.value)}
+                      disabled={loading}
                     >
-                      <option value="">-- Selecciona un atributo --</option>
-                      {getAvailableAttributes().map(attr => (
-                        <option key={attr.id} value={attr.id}>
-                          {attr.nombre}
+                      <option value="">Seleccioná una categoría…</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.nombre}
                         </option>
                       ))}
                     </select>
+                    {allErrors.categoriaId && <div className="invalid-feedback d-block">{allErrors.categoriaId}</div>}
                   </div>
 
-                  {/* Dropdown 2: Seleccionar valores (si hay atributo seleccionado) */}
-                  {selectedAttrIdForAdd && (
-                    <div className="mb-2">
-                      <label className="form-label fw-semibold small text-dark">
-                        <i className="fa fa-check me-2 text-primary"></i>
-                        Selecciona Valores:
-                      </label>
-                      <div className="input-group mb-2">
-                        <select
-                          className="form-select border-primary"
-                          multiple
-                          size="4"
-                          value={selectedAttrValuesForAdd}
-                          onChange={(e) => {
-                            const selected = Array.from(e.target.selectedOptions, option => option.value);
-                            setSelectedAttrValuesForAdd(selected);
-                          }}
-                        >
-                          {getAttributeValues(parseInt(selectedAttrIdForAdd)).map(value => (
-                            <option key={value} value={value}>
-                              {value}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Tags de valores seleccionados */}
-                      {selectedAttrValuesForAdd.length > 0 && (
-                        <div className="mb-3">
-                          <div className="d-flex flex-wrap gap-2">
-                            {selectedAttrValuesForAdd.map(value => (
-                              <span key={value} className="badge bg-success">
-                                <i className="fa fa-check me-1"></i>
-                                {value}
-                                <button
-                                  type="button"
-                                  className="btn-close btn-close-white p-0 ms-2"
-                                  onClick={() => setSelectedAttrValuesForAdd(selectedAttrValuesForAdd.filter(v => v !== value))}
-                                  style={{fontSize: '0.65rem'}}
-                                />
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Botón Agregar */}
-                      <button
-                        type="button"
-                        className="btn btn-success w-100"
-                        onClick={() => handleAddAttribute(selectedAttrIdForAdd)}
-                        disabled={!selectedAttrIdForAdd || selectedAttrValuesForAdd.length === 0}
-                      >
-                        <i className="fa fa-plus me-2"></i>
-                        Agregar Atributo
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* TAGS de atributos seleccionados - EDITABLES */}
-                {selectedAttributes.length > 0 && (
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold small mb-2 text-dark">
-                      <i className="fa fa-tags me-2 text-primary"></i>
-                      Atributos Agregados:
-                    </label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {selectedAttributes.map((selected) => {
-                        const attr = getAttributeById(selected.id);
-                        const allValues = getAttributeValues(selected.id);
-                        const selectedValues = selected.values || [];
-                        const isEditing = editingAttrId === selected.id;
-
-                        return (
-                          <div key={selected.id} className="d-flex align-items-center gap-2 position-relative">
-                            <span
-                              className="badge bg-info bg-opacity-10 text-info border border-info d-inline-flex align-items-center gap-2 px-3 py-2"
-                              onClick={() => setEditingAttrId(editingAttrId === selected.id ? null : selected.id)}
-                              style={{cursor: 'pointer', fontSize: '0.95rem'}}
-                            >
-                              <i className="fa fa-edit me-1"></i>
-                              <strong>{attr?.nombre}:</strong>
-                              <span className="ms-1">
-                                {selectedValues.length > 0 
-                                  ? selectedValues.slice(0, 2).join(', ') + (selectedValues.length > 2 ? '...' : '')
-                                  : 'sin valores'}
-                              </span>
-                            </span>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => {
-                                handleRemoveAttribute(selected.id);
-                                setEditingAttrId(null);
-                              }}
-                              title="Eliminar atributo"
-                            >
-                              <i className="fa fa-times"></i>
-                            </button>
-
-                            {/* POPUP para editar valores */}
-                            {isEditing && (
-                              <div className="position-absolute top-100 start-0 mt-2 bg-white border border-primary rounded shadow-sm p-3"
-                                   style={{zIndex: 1000, minWidth: '280px', maxWidth: '400px'}}>
-                                <h6 className="mb-3 fw-semibold">
-                                  Valores de {attr?.nombre}:
-                                </h6>
-                                <div className="d-flex flex-column gap-2 mb-3" style={{maxHeight: '200px', overflowY: 'auto'}}>
-                                  {allValues.map((value) => (
-                                    <div key={value} className="form-check">
-                                      <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id={`attr-${selected.id}-${value}`}
-                                        checked={selectedValues.includes(value) || false}
-                                        onChange={(e) => {
-                                          let newValues = selectedValues || [];
-                                          if (e.target.checked) {
-                                            newValues = [...newValues, value];
-                                          } else {
-                                            newValues = newValues.filter(v => v !== value);
-                                          }
-                                          handleUpdateAttributeValues(selected.id, newValues);
-                                        }}
-                                      />
-                                      <label className="form-check-label ms-1" htmlFor={`attr-${selected.id}-${value}`}>
-                                        {value}
-                                      </label>
-                                    </div>
-                                  ))}
-                                </div>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-primary w-100"
-                                  onClick={() => setEditingAttrId(null)}
-                                >
-                                  <i className="fa fa-check me-2"></i>Listo
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ========== SECCIÓN 3: STOCK Y VARIANTES ========== */}
-            {selectedAttributes.length > 0 ? (
-              // Con atributos: tabla de variantes (SIEMPRE mostrar)
-              <>
-                {variants.length > 0 && (
-                  <div className="mb-4">
-                    <ProductVariantsTable
-                      variants={variants}
-                      selectedAttributes={selectedAttributes}
-                      onVariantStockChange={handleVariantStockChange}
-                      onVariantPriceChange={handleVariantPriceChange}
-                      basePrecio={formData.precioBase || 0}
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              // Sin atributos: stock general
-              <div className="card bg-light border">
-                <div className="card-body p-4">
-                  <h6 className="fw-semibold mb-3">
-                    <i className="fa fa-boxes me-2" style={{ color: '#0d6efd' }}></i>
-                    Stock General
-                  </h6>
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">Cantidad en Stock</label>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Precio Base *</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
                       <input
                         type="number"
-                        className="form-control form-control-lg"
-                        value={stockGeneral}
-                        onChange={(e) => setStockGeneral(parseInt(e.target.value) || 0)}
-                        placeholder="0"
+                        className={`form-control ${allErrors.precioBase ? 'is-invalid' : ''}`}
+                        value={formData.precioBase || ''}
+                        onChange={(e) => onChange('precioBase', parseFloat(e.target.value) || '')}
+                        placeholder="0.00"
                         min="0"
+                        step="0.01"
+                        disabled={loading}
                       />
-                      <small className="text-muted">Este es el único nivel de stock</small>
+                    </div>
+                    {allErrors.precioBase && <div className="invalid-feedback d-block">{allErrors.precioBase}</div>}
+                  </div>
+                </div>
+
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <label className="form-label fw-semibold">Código de Barras</label>
+                    <div className="input-group">
+                      <span className="input-group-text"><i className="fa fa-barcode"></i></span>
+                      <input
+                        type="text"
+                        className="form-control font-monospace text-center"
+                        value={formatBarcode(formData.codigoBarras || '')}
+                        readOnly
+                      />
+                      <button type="button" className="btn btn-outline-secondary" onClick={handleCopyBarcode} title="Copiar" disabled={loading}>
+                        <i className="fa fa-copy"></i>
+                      </button>
+                      <button type="button" className="btn btn-outline-secondary" onClick={handleGenerateBarcode} title="Generar nuevo" disabled={loading}>
+                        <i className="fa fa-refresh"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label fw-semibold">Estado</label>
+                    <div className="form-check form-switch mt-2">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="productoActivo"
+                        checked={formData.activo ?? true}
+                        onChange={(e) => onChange('activo', e.target.checked)}
+                        disabled={loading}
+                      />
+                      <label className="form-check-label" htmlFor="productoActivo">
+                        {formData.activo ? 'Activo' : 'Inactivo'}
+                      </label>
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
+            {/* ── PASO 2: Stock y variantes ────────────────────────────── */}
+            {step === 2 && (
+              <div>
+                {/* Selector de atributos */}
+                <div className="mb-4">
+                  <label className="form-label fw-semibold mb-2">
+                    <i className="fa fa-layer-group me-2 text-primary"></i>
+                    Atributos
+                    <span className="text-muted fw-normal ms-2 small">
+                      — seleccioná los que apliquen al producto
+                    </span>
+                  </label>
+                  <div className="d-flex flex-wrap gap-2">
+                    {attributes.map((attr) => {
+                      const selected = isAttrSelected(attr.id);
+                      return (
+                        <button
+                          key={attr.id}
+                          type="button"
+                          className={`btn btn-sm px-3 ${selected ? 'btn-primary' : 'btn-outline-secondary'}`}
+                          onClick={() => toggleAttribute(attr)}
+                          disabled={loading}
+                        >
+                          <i className={`fa ${selected ? 'fa-check' : 'fa-plus'} me-2`}></i>
+                          {attr.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Valores de cada atributo seleccionado */}
+                {selectedAttributes.length > 0 && (
+                  <div className="mb-4">
+                    {selectedAttributes.map((sel) => {
+                      const attr = attributes.find((a) => a.id === sel.id);
+                      const values = getValues(sel.id);
+                      return (
+                        <div key={sel.id} className="mb-3 p-3 border rounded">
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="fw-semibold small">
+                              <i className="fa fa-tag me-2 text-primary"></i>
+                              {attr?.nombre}
+                              {sel.values.length > 0 && (
+                                <span className="badge bg-primary ms-2">{sel.values.length} seleccionados</span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-link text-danger p-0"
+                              onClick={() => toggleAttribute(attr)}
+                              disabled={loading}
+                            >
+                              <i className="fa fa-times"></i>
+                            </button>
+                          </div>
+                          <div className="d-flex flex-wrap gap-2">
+                            {values.map((value) => {
+                              const active = sel.values.includes(value);
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  className={`btn btn-sm ${active ? 'btn-success' : 'btn-outline-secondary'}`}
+                                  onClick={() => toggleValue(sel.id, value)}
+                                  disabled={loading}
+                                >
+                                  {active && <i className="fa fa-check me-1"></i>}
+                                  {value}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Tabla de variantes o stock general */}
+                {selectedAttributes.length === 0 ? (
+                  <div className="p-3 border rounded">
+                    <label className="form-label fw-semibold">
+                      <i className="fa fa-boxes me-2 text-primary"></i>Stock General
+                    </label>
+                    <div className="row">
+                      <div className="col-md-5">
+                        <div className="input-group">
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={stockGeneral}
+                            onChange={(e) => setStockGeneral(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            min="0"
+                            disabled={loading}
+                          />
+                          <span className="input-group-text">unidades</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : variants.length > 0 ? (
+                  <ProductVariantsTable
+                    variants={variants}
+                    selectedAttributes={selectedAttributes}
+                    onVariantStockChange={handleVariantStock}
+                    onVariantPriceChange={handleVariantPrice}
+                    basePrecio={parseFloat(formData.precioBase || 0)}
+                  />
+                ) : (
+                  <div className="text-center text-muted py-4 border rounded">
+                    <i className="fa fa-layer-group fa-2x mb-2 d-block opacity-25"></i>
+                    Seleccioná valores para generar las variantes
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* FOOTER */}
-          <div className="modal-footer bg-light border-top">
-            <button 
-              className="btn btn-secondary"
-              onClick={onCancel}
-            >
-              <i className="fa fa-times me-2"></i>
-              Cancelar
-            </button>
-            <button 
-              className="btn btn-primary"
-              onClick={() => {
-                // Validar campos obligatorios
-                if (!formData.nombre?.trim()) {
-                  toast.error('El nombre es obligatorio');
-                  return;
-                }
-                if (!formData.descripcion?.trim()) {
-                  toast.error('La descripción es obligatoria');
-                  return;
-                }
-                if (!formData.categoriaId) {
-                  toast.error('Debes seleccionar una categoría');
-                  return;
-                }
-                if (!formData.precioBase || formData.precioBase < 0) {
-                  toast.error('El precio base es inválido');
-                  return;
-                }
-                if (!formData.codigoBarras) {
-                  toast.error('Debe tener un código de barras');
-                  return;
-                }
-
-                // Pasar datos completos incluyendo variantes
-                const finalData = {
-                  ...formData,
-                  variants: variants,
-                  stockGeneral: selectedAttributes.length === 0 ? stockGeneral : undefined,
-                  atributosUsados: selectedAttributes.map(sa => {
-                    const attr = attributes.find(a => a.id === sa.id);
-                    return attr?.nombre;
-                  }).filter(Boolean)
-                };
-                onSave && onSave(finalData);
-              }}
-            >
-              <i className="fa fa-save me-2"></i>
-              Guardar Producto
-            </button>
+          {/* Footer */}
+          <div className="modal-footer border-top">
+            {step === 1 ? (
+              <>
+                <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+                  <i className="fa fa-times me-2"></i>Cancelar
+                </button>
+                <button className="btn btn-primary ms-auto" onClick={handleNext} disabled={loading}>
+                  Siguiente<i className="fa fa-arrow-right ms-2"></i>
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-outline-secondary" onClick={() => setStep(1)} disabled={loading}>
+                  <i className="fa fa-arrow-left me-2"></i>Anterior
+                </button>
+                <button className="btn btn-primary ms-auto" onClick={handleGuardar} disabled={loading}>
+                  {loading ? (
+                    <><span className="spinner-border spinner-border-sm me-2"></span>Guardando…</>
+                  ) : (
+                    <><i className="fa fa-save me-2"></i>Guardar Producto</>
+                  )}
+                </button>
+              </>
+            )}
           </div>
+
         </div>
       </div>
     </div>

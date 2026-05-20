@@ -1,190 +1,182 @@
-/**
- * Hook personalizado para la lógica de Ofertas
- * Maneja estado, validaciones y llamadas al servicio
- */
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { fetchOffers, saveOffer, deleteOffer } from '../services/offersService';
-import { fetchProducts } from '../../productos/services/productsService';
-import { usePagination, useSearchFilter } from '../../hooks/useCatalogoHooks';
-import { validaciones, validateObject } from '../../utils/validators';
+
+const FORM_INICIAL = {
+  nombre:        '',
+  descripcion:   '',
+  productoId:    '',
+  varianteId:    '',
+  descuento:     '',
+  tipoDescuento: 'porcentaje',
+  precioOferta:  '',
+  stockOferta:   '',
+  fechaInicio:   '',
+  fechaFin:      '',
+  activo:        true,
+};
+
+const MOCK_PRODUCTOS = [
+  {
+    id: 1, nombre: 'Remera Básica', precioBase: 29.99,
+    variants: [
+      { variantId: '1-M-Negro',  Talla: 'M', Color: 'Negro',  stock: 10, precio: 29.99 },
+      { variantId: '1-M-Blanco', Talla: 'M', Color: 'Blanco', stock: 15, precio: 29.99 },
+      { variantId: '1-L-Negro',  Talla: 'L', Color: 'Negro',  stock: 12, precio: 29.99 },
+    ],
+  },
+  {
+    id: 2, nombre: 'Buzo Oversize', precioBase: 49.99,
+    variants: [
+      { variantId: '2-S', Talla: 'S', stock: 5,  precio: 49.99 },
+      { variantId: '2-M', Talla: 'M', stock: 8,  precio: 49.99 },
+      { variantId: '2-L', Talla: 'L', stock: 12, precio: 49.99 },
+    ],
+  },
+];
 
 export const useOffers = () => {
-  const [offers, setOffers] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    productoId: '',
-    varianteId: '',
-    precioOferta: '',
-    stockOferta: '',
-    fechaInicio: '',
-    fechaFin: '',
-    activo: true
-  });
-  const [errors, setErrors] = useState({});
+  const [offers,     setOffers]     = useState([]);
+  const [products]                  = useState(MOCK_PRODUCTOS);
+  const [loading,    setLoading]    = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [showModal,  setShowModal]  = useState(false);
+  const [editingId,  setEditingId]  = useState(null);
+  const [formData,   setFormData]   = useState(FORM_INICIAL);
+  const [errors,     setErrors]     = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const { searchTerm, setSearchTerm, filteredItems } = useSearchFilter(offers);
-  const pagination = usePagination(filteredItems, 10);
+  useEffect(() => { cargarOfertas(); }, []);
 
-  // Cargar ofertas y productos al montar
-  useEffect(() => {
-    loadOffersData();
-    loadProductsData();
-  }, []);
-
-  const loadProductsData = async () => {
-    try {
-      const productData = await fetchProducts();
-      setProducts(productData);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast.error('Error al cargar productos');
-    }
-  };
-
-  const loadOffersData = async () => {
+  const cargarOfertas = async () => {
     setLoading(true);
     try {
-      const data = await fetchOffers();
-      setOffers(data);
-    } catch (error) {
-      console.error('Error loading offers:', error);
+      setOffers(await fetchOffers());
+    } catch {
       toast.error('Error al cargar ofertas');
     } finally {
       setLoading(false);
     }
   };
 
-  const validateForm = () => {
-    const fieldValidations = {
-      nombre: validaciones.nombre,
-      precioOferta: validaciones.precio,
-      stockOferta: validaciones.precio
-    };
-    const newErrors = validateObject(formData, fieldValidations);
-
-    if (!formData.productoId) {
-      newErrors.productoId = 'Selecciona un producto';
-    }
-    if (formData.productoId && products.find(p => p.id === Number(formData.productoId))?.variants?.length > 0 && !formData.varianteId) {
-      newErrors.varianteId = 'Selecciona una variante';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const abrirCrear = () => {
+    setEditingId(null);
+    setFormData(FORM_INICIAL);
+    setErrors({});
+    setShowModal(true);
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) {
-      toast.error('Por favor corrige los errores');
-      return;
-    }
-
-    try {
-      const savedOffer = await saveOffer(formData, editingId);
-      
-      if (editingId) {
-        setOffers(prev => 
-          prev.map(o => o.id === editingId ? savedOffer : o)
-        );
-        toast.success('Oferta actualizada');
-      } else {
-        setOffers(prev => [...prev, savedOffer]);
-        toast.success('Oferta creada');
-      }
-      
-      resetForm();
-      setShowModal(false);
-    } catch (error) {
-      console.error('Error saving offer:', error);
-      toast.error('Error al guardar');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro?')) {
-      try {
-        await deleteOffer(id);
-        setOffers(prev => prev.filter(o => o.id !== id));
-        toast.success('Oferta eliminada');
-      } catch (error) {
-        console.error('Error deleting offer:', error);
-        toast.error('Error al eliminar');
-      }
-    }
-  };
-
-  const handleEdit = (offer) => {
-    setFormData({
-      ...offer,
-      productoId: offer.productoId || '',
-      varianteId: offer.varianteId || '',
-      precioOferta: offer.precioOferta || '',
-      stockOferta: offer.stockOferta || ''
-    });
+  const abrirEditar = (offer) => {
     setEditingId(offer.id);
-    setShowModal(true);
-  };
-
-  const handleToggleActive = async (id, activo) => {
-    try {
-      setOffers(prev => prev.map(offer => offer.id === id ? { ...offer, activo } : offer));
-      const offerToUpdate = offers.find(offer => offer.id === id);
-      if (!offerToUpdate) return;
-      await saveOffer({ ...offerToUpdate, activo }, id);
-      toast.success(activo ? 'Oferta activada' : 'Oferta desactivada');
-    } catch (error) {
-      console.error('Error toggling offer state:', error);
-      toast.error('Error al cambiar estado de la oferta');
-      setOffers(prev => prev.map(offer => offer.id === id ? { ...offer, activo: !activo } : offer));
-    }
-  };
-
-  const handleOpenModal = () => {
-    resetForm();
-    setShowModal(true);
-  };
-
-  const resetForm = () => {
     setFormData({
-      nombre: '',
-      descripcion: '',
-      productoId: '',
-      varianteId: '',
-      precioOferta: '',
-      stockOferta: '',
-      fechaInicio: '',
-      fechaFin: '',
-      activo: true
+      nombre:        offer.nombre        || '',
+      descripcion:   offer.descripcion   || '',
+      productoId:    offer.productoId    || '',
+      varianteId:    offer.varianteId    || '',
+      descuento:     offer.descuento     ?? '',
+      tipoDescuento: offer.tipoDescuento || 'porcentaje',
+      precioOferta:  offer.precioOferta  || '',
+      stockOferta:   offer.stockOferta   || '',
+      fechaInicio:   offer.fechaInicio   || '',
+      fechaFin:      offer.fechaFin      || '',
+      activo:        offer.activo        ?? true,
     });
+    setErrors({});
+    setShowModal(true);
+  };
+
+  const cerrarModal = () => {
+    setShowModal(false);
     setEditingId(null);
     setErrors({});
   };
 
+  const handleChange = (campo, valor) => {
+    setFormData((prev) => ({
+      ...prev,
+      [campo]: valor,
+      ...(campo === 'productoId' ? { varianteId: '' } : {}),
+    }));
+    if (errors[campo]) setErrors((prev) => ({ ...prev, [campo]: undefined }));
+  };
+
+  const handleGuardar = async (finalData) => {
+    const e = {};
+    if (!finalData.nombre?.trim() || finalData.nombre.trim().length < 2)
+      e.nombre = 'El nombre debe tener al menos 2 caracteres';
+    if (!finalData.productoId)
+      e.productoId = 'Seleccioná un producto';
+    const prod = products.find((p) => p.id === Number(finalData.productoId));
+    if (prod?.variants?.length > 0 && !finalData.varianteId)
+      e.varianteId = 'Seleccioná una variante';
+    if (!finalData.precioOferta || parseFloat(finalData.precioOferta) <= 0)
+      e.precioOferta = 'El precio de oferta es inválido';
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      toast.error('Corregí los errores antes de guardar');
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = await saveOffer(finalData, editingId);
+      if (editingId) {
+        setOffers((prev) => prev.map((o) => (o.id === editingId ? saved : o)));
+        toast.success('Oferta actualizada');
+      } else {
+        setOffers((prev) => [...prev, saved]);
+        toast.success('Oferta creada');
+      }
+      cerrarModal();
+    } catch {
+      toast.error('Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEliminar = async (id) => {
+    try {
+      await deleteOffer(id);
+      setOffers((prev) => prev.filter((o) => o.id !== id));
+      toast.success('Oferta eliminada');
+    } catch {
+      toast.error('Error al eliminar');
+    }
+  };
+
+  const toggleActivo = async (offer) => {
+    const next = { ...offer, activo: !offer.activo };
+    setOffers((prev) => prev.map((o) => (o.id === offer.id ? next : o)));
+    try {
+      await saveOffer(next, offer.id);
+    } catch {
+      setOffers((prev) => prev.map((o) => (o.id === offer.id ? offer : o)));
+      toast.error('Error al actualizar');
+    }
+  };
+
+  const filtrados = offers.filter((o) =>
+    o.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (o.descripcion || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return {
-    offers,
+    offers: filtrados,
     products,
     loading,
+    saving,
     showModal,
-    setShowModal,
     editingId,
     formData,
-    setFormData,
     errors,
     searchTerm,
     setSearchTerm,
-    filteredItems,
-    pagination,
-    handleSave,
-    handleDelete,
-    handleEdit,
-    handleOpenModal,
-    handleToggleActive,
-    validateForm
+    abrirCrear,
+    abrirEditar,
+    cerrarModal,
+    handleChange,
+    handleGuardar,
+    handleEliminar,
+    toggleActivo,
   };
 };

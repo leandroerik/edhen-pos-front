@@ -1,8 +1,3 @@
-/**
- * Módulo de Ventas
- * Exporta componentes, páginas, hooks y utilidades
- */
-
 export { default as Ventas } from './Ventas';
 export { default } from './Ventas';
 
@@ -12,9 +7,8 @@ export { default as SalesTable } from './components/SalesTable';
 
 // Páginas
 export { default as VentasHistorial } from './pages/VentasHistorial';
+export { default as Devoluciones } from './pages/Devoluciones';
+export { default as VentasInternet } from './pages/VentasInternet';
 
-// Hooks
-export { useVentasData } from './hooks/useVentasData';
-
-// Utilidades  
+// Utilidades
 export { VENTAS_SECTIONS, ESTADO_VENTA, METODO_PAGO, VENTAS_CONFIG } from './utils/ventasConfig';

@@ -1,17 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Componente reutilizable para tabla genérica
- * @component
- */
-const CatalogoTable = ({ 
-  columns, 
-  data = [], 
-  onEdit, 
-  onDelete, 
-  onToggleActive,
-  loading = false 
+const CatalogoTable = ({
+  columns,
+  data = [],
+  onEdit,
+  onDelete,
+  onPrint,
+  loading = false
 }) => {
   if (loading) {
     return (
@@ -55,17 +51,16 @@ const CatalogoTable = ({
               ))}
               <td className="py-3">
                 <div className="d-flex justify-content-center gap-2">
-                  {onToggleActive && (
+                  {onPrint && row.codigoBarras && (
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => onPrint(row)}
+                      title="Imprimir códigos de barras"
+                    >
+                      <i className="fa fa-print"></i>
+                    </button>
+                  )}
                   <button
-                    className={`btn btn-sm ${row.activo ? 'btn-outline-secondary' : 'btn-outline-success'}`}
-                    onClick={() => onToggleActive(row.id, !row.activo)}
-                    title={row.activo ? 'Desactivar' : 'Activar'}
-                  >
-                    <i className={`fa fa-power-off me-1`}></i>
-                    {row.activo ? 'Desactivar' : 'Activar'}
-                  </button>
-                )}
-                <button
                     className="btn btn-primary btn-sm"
                     onClick={() => onEdit && onEdit(row)}
                     title="Editar"
@@ -103,7 +98,7 @@ CatalogoTable.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object),
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  onToggleActive: PropTypes.func,
+  onPrint: PropTypes.func,
   loading: PropTypes.bool
 };
 

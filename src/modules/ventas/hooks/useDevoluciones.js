@@ -252,6 +252,13 @@ export const useDevoluciones = () => {
     toast.info(`Historial de ${tab} limpiado`);
   };
 
+  const deleteRegistroById = (id) => {
+    const updated = registro.filter((item) => item.id !== id);
+    setRegistro(updated);
+    saveRegistro(updated);
+    toast.success('Registro eliminado');
+  };
+
   return {
     // Estado
     productos,
@@ -293,6 +300,7 @@ export const useDevoluciones = () => {
     setFilterMotivo,
     setFilterBusqueda,
     handleAplicarDevolucion,
-    limpiarHistorial
+    limpiarHistorial,
+    deleteRegistroById,
   };
 };
