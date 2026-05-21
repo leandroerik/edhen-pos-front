@@ -6,7 +6,6 @@ const ImpuestosConfig = () => {
   const [impuestos, setImpuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const [nuevoImpuesto, setNuevoImpuesto] = useState({
     nombre: '',
