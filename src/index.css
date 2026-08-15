@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Impresión de "un solo elemento" (tickets, etiquetas, hoja de
+   etiquetas): oculta todo lo demás en la página en vez de confiar en
+   position:fixed, que los navegadores no respetan de forma consistente
+   al imprimir — sin esto, el contenido de atrás del modal/sidebar
+   también salía impreso. Un solo id genérico (`imprimible`) porque solo
+   una pantalla imprime por vez — lo usan el ticket de venta
+   (TicketVentaModal), la etiqueta de variante (EtiquetaVariantePage), la
+   etiqueta genérica de producto (EtiquetaProductoPage) y la hoja A4 de
+   varias etiquetas (EtiquetasColaPage). Antes se llamaba
+   `#ticket-imprimible` y solo el ticket lo usaba — las páginas de
+   etiqueta no lo tenían, así que imprimían en blanco (`body *` las
+   ocultaba igual que a todo el resto). */
+@media print {
+  /* Ancho de rollo de una impresora térmica de tickets chica (80mm es el
+     tamaño más común en comercios; para una de 58mm, cambiar acá). Sin
+     esto, el navegador imprime en A4/Carta y el ticket/etiqueta queda
+     perdido en el medio de una hoja grande. La hoja A4 de varias
+     etiquetas necesita su propio tamaño de página — lo pisa en el
+     momento con un <style> inyectado (ver `usePaginaImpresion` en
+     EtiquetasColaPage.tsx), no acá, porque `@page` no se puede
+     condicionar por selector CSS.
+     */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+  #imprimible,
+  #imprimible * {
+    visibility: visible;
+  }
+  /* Ancho NO se fija acá a propósito: el ticket (80mm) y la hoja A4 de
+     etiquetas necesitan anchos distintos. Cada pantalla lo pone en su
+     propio wrapper (`print:w-[80mm]`, etc.) — esta regla solo se ocupa
+     de sacarlo del flujo del resto de la página. */
+  #imprimible {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 3mm;
+  }
+}
