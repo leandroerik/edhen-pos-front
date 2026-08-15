@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { categoriasMock } from './mocks/catalogos.mock'
+import { CategoriasModal } from './components/CategoriasModal'
+import { useCatalogos } from './hooks/useCatalogos'
 import { useProductos } from './hooks/useProductos'
 
 const formatPrecio = new Intl.NumberFormat('es-AR', {
@@ -15,6 +16,9 @@ export function ProductosPage() {
   const [texto, setTexto] = useState('')
   const [categoriaId, setCategoriaId] = useState<number | 'todas'>('todas')
   const [estado, setEstado] = useState<FiltroEstado>('activos')
+  const [modalCategoriasAbierto, setModalCategoriasAbierto] = useState(false)
+
+  const { categorias, recargar: recargarCatalogos } = useCatalogos()
 
   const filtro = useMemo(
     () => ({
@@ -31,12 +35,21 @@ export function ProductosPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Productos</h1>
-        <Link
-          to="/productos/nuevo"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          + Nuevo producto
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setModalCategoriasAbierto(true)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            🏷️ Categorías
+          </button>
+          <Link
+            to="/productos/nuevo"
+            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            + Nuevo producto
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -53,9 +66,9 @@ export function ProductosPage() {
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
         >
           <option value="todas">Todas las categorías</option>
-          {categoriasMock.map((c) => (
+          {categorias.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.nombre}
+              {c.nombre} {c.activo === false ? '(Inactiva)' : ''}
             </option>
           ))}
         </select>
@@ -84,11 +97,14 @@ export function ProductosPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Categoría
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Precio base
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Variantes
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Stock total
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Estado
@@ -98,83 +114,91 @@ export function ProductosPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {cargando && (
+          <tbody className="divide-y divide-gray-200">
+            {cargando ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
-                  Cargando...
+                <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
+                  Cargando productos...
                 </td>
               </tr>
-            )}
-
-            {!cargando && productos.length === 0 && (
+            ) : productos.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
                   No se encontraron productos.
                 </td>
               </tr>
-            )}
-
-            {!cargando &&
-              productos.map((producto) => {
-                const totalStock = producto.variantes.reduce((acc, v) => acc + v.stock, 0)
-                const variantesBajoMinimo = producto.variantes.filter(
-                  (v) => v.stock < v.stockMinimo,
-                ).length
+            ) : (
+              productos.map((p) => {
+                const totalStock = p.variantes.reduce((acc, v) => acc + v.stock, 0)
+                const totalReservado = p.variantes.reduce((acc, v) => acc + v.stockReservado, 0)
 
                 return (
-                  <tr key={producto.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{producto.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{producto.categoria.nombre}</td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-900">
-                      {formatPrecio.format(producto.precioBase)}
+                  <tr key={p.id} className={!p.activo ? 'bg-gray-50 text-gray-400' : undefined}>
+                    <td className="px-4 py-3">
+                      <Link
+                        to={`/productos/${p.id}`}
+                        className="font-medium text-gray-900 hover:underline"
+                      >
+                        {p.nombre}
+                      </Link>
+                      {p.codigoBarras && (
+                        <span className="ml-2 font-mono text-xs text-gray-400">
+                          {p.codigoBarras}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{p.categoria.nombre}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      {formatPrecio.format(p.precioBase)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {producto.variantes.length} · stock total {totalStock}
-                      {variantesBajoMinimo > 0 && (
-                        <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                          {variantesBajoMinimo} bajo mínimo
+                      {p.variantes.length}{' '}
+                      {p.variantes.length === 1 ? 'variante' : 'variantes'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="font-medium text-gray-900">{totalStock}</span>
+                      {totalReservado > 0 && (
+                        <span className="ml-1 text-xs text-amber-600">
+                          ({totalReservado} reserv.)
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          producto.activo
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          p.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        {producto.activo ? 'Activo' : 'Inactivo'}
+                        {p.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
-                      <div className="flex justify-end gap-3">
+                      <div className="flex items-center justify-end gap-2">
                         <Link
-                          to={`/productos/${producto.id}`}
-                          className="font-medium text-gray-700 hover:text-gray-900"
+                          to={`/productos/${p.id}`}
+                          className="text-gray-600 hover:text-gray-900"
                         >
                           Ver
                         </Link>
                         <Link
-                          to={`/productos/${producto.id}/editar`}
-                          className="font-medium text-gray-700 hover:text-gray-900"
+                          to={`/productos/${p.id}/editar`}
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
                           Editar
                         </Link>
-                        {producto.activo ? (
+                        {p.activo ? (
                           <button
                             type="button"
-                            onClick={() => darDeBaja(producto.id)}
-                            className="font-medium text-red-600 hover:text-red-800"
+                            onClick={() => darDeBaja(p.id)}
+                            className="text-red-600 hover:text-red-900"
                           >
                             Dar de baja
                           </button>
                         ) : (
                           <button
                             type="button"
-                            onClick={() => reactivar(producto.id)}
-                            className="font-medium text-green-700 hover:text-green-900"
+                            onClick={() => reactivar(p.id)}
+                            className="text-green-600 hover:text-green-900"
                           >
                             Reactivar
                           </button>
@@ -183,10 +207,18 @@ export function ProductosPage() {
                     </td>
                   </tr>
                 )
-              })}
+              })
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Modal de Gestión de Categorías */}
+      <CategoriasModal
+        abierto={modalCategoriasAbierto}
+        onCerrar={() => setModalCategoriasAbierto(false)}
+        onActualizado={recargarCatalogos}
+      />
     </div>
   )
 }

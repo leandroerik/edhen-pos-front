@@ -10,6 +10,7 @@ import {
   type ProductoInput,
 } from '../../api/productos.api'
 import { VariantesEditor } from './components/VariantesEditor'
+import { CategoriasModal } from './components/CategoriasModal'
 import { useCatalogos } from './hooks/useCatalogos'
 import type { VarianteDraft } from './lib/varianteDraft'
 
@@ -32,6 +33,7 @@ export function ProductoFormPage() {
   const [productoCargando, setProductoCargando] = useState(esEdicion)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [modalCategoriasAbierto, setModalCategoriasAbierto] = useState(false)
 
   useEffect(() => {
     if (!esEdicion) return
@@ -180,8 +182,17 @@ export function ProductoFormPage() {
             />
           </label>
 
-          <label className="text-sm text-gray-700">
-            Categoría
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-700">Categoría</label>
+              <button
+                type="button"
+                onClick={() => setModalCategoriasAbierto(true)}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                + Gestionar categorías
+              </button>
+            </div>
             <select
               value={categoriaId ?? categorias[0]?.id ?? ''}
               onChange={(e) => setCategoriaId(Number(e.target.value))}
@@ -189,11 +200,11 @@ export function ProductoFormPage() {
             >
               {categorias.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.nombre}
+                  {c.nombre} {c.activo === false ? '(Inactiva)' : ''}
                 </option>
               ))}
             </select>
-          </label>
+          </div>
 
           <label className="text-sm text-gray-700 sm:col-span-2">
             Descripción
@@ -256,6 +267,12 @@ export function ProductoFormPage() {
           </button>
         </div>
       </form>
+
+      <CategoriasModal
+        abierto={modalCategoriasAbierto}
+        onCerrar={() => setModalCategoriasAbierto(false)}
+        onActualizado={recargarCatalogos}
+      />
     </div>
   )
 }

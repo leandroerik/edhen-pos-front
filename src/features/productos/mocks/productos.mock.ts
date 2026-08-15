@@ -26,7 +26,7 @@ const productosMockBase: Producto[] = [
     variantes: [
       { id: 4, productoId: 2, color: COLORES.beige, talla: TALLAS_SUPERIOR.s, sku: 'VES-FLO-BEI-S', stock: 6, stockReservado: 0, stockMinimo: 3, activo: true },
       { id: 5, productoId: 2, color: COLORES.beige, talla: TALLAS_SUPERIOR.m, sku: 'VES-FLO-BEI-M', stock: 2, stockReservado: 0, stockMinimo: 3, activo: true },
-      { id: 6, productoId: 2, color: COLORES.rosaPalo, talla: TALLAS_SUPERIOR.l, sku: 'VES-FLO-ROS-L', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 6, productoId: 2, color: COLORES.rosaPastel, talla: TALLAS_SUPERIOR.l, sku: 'VES-FLO-ROS-L', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
     ],
   },
   {
@@ -37,21 +37,21 @@ const productosMockBase: Producto[] = [
     precioBase: 28000,
     activo: true,
     variantes: [
-      { id: 7, productoId: 3, color: COLORES.denim, talla: TALLAS_INFERIOR.t38, sku: 'PAN-JEA-DEN-38', stock: 9, stockReservado: 0, stockMinimo: 4, activo: true },
-      { id: 8, productoId: 3, color: COLORES.denim, talla: TALLAS_INFERIOR.t40, sku: 'PAN-JEA-DEN-40', stock: 4, stockReservado: 0, stockMinimo: 4, activo: true },
-      { id: 9, productoId: 3, color: COLORES.denim, talla: TALLAS_INFERIOR.t42, sku: 'PAN-JEA-DEN-42', stock: 1, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 7, productoId: 3, color: COLORES.azulMarino, talla: TALLAS_INFERIOR.t38, sku: 'PAN-JEA-AZU-38', stock: 9, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 8, productoId: 3, color: COLORES.azulMarino, talla: TALLAS_INFERIOR.t40, sku: 'PAN-JEA-AZU-40', stock: 4, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 9, productoId: 3, color: COLORES.celeste, talla: TALLAS_INFERIOR.t42, sku: 'PAN-JEA-CEL-42', stock: 1, stockReservado: 0, stockMinimo: 4, activo: true },
     ],
   },
   {
     id: 4,
-    categoria: CATEGORIAS.camperas,
-    nombre: 'Campera de jean oversize',
-    descripcion: 'Campera de jean clásica, calce oversize',
-    precioBase: 45000,
+    categoria: CATEGORIAS.palazos,
+    nombre: 'Pantalón palazzo dralón',
+    descripcion: 'Pantalón palazzo en tejido dralón suave con caída pesada',
+    precioBase: 28500,
     activo: true,
     variantes: [
-      { id: 10, productoId: 4, color: COLORES.denim, talla: TALLAS_SUPERIOR.m, sku: 'CAM-JEA-DEN-M', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
-      { id: 11, productoId: 4, color: COLORES.denim, talla: TALLAS_SUPERIOR.l, sku: 'CAM-JEA-DEN-L', stock: 2, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 10, productoId: 4, color: COLORES.negro, talla: TALLAS_INFERIOR.t38, sku: 'PAL-DRA-NEG-38', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 11, productoId: 4, color: COLORES.camel, talla: TALLAS_INFERIOR.t40, sku: 'PAL-DRA-CAM-40', stock: 2, stockReservado: 0, stockMinimo: 3, activo: true },
     ],
   },
   {
@@ -62,21 +62,21 @@ const productosMockBase: Producto[] = [
     precioBase: 26000,
     activo: true,
     variantes: [
-      { id: 12, productoId: 5, color: COLORES.gris, talla: TALLAS_SUPERIOR.m, sku: 'BUZ-OVE-GRI-M', stock: 7, stockReservado: 0, stockMinimo: 4, activo: true },
-      { id: 13, productoId: 5, color: COLORES.gris, talla: TALLAS_SUPERIOR.l, sku: 'BUZ-OVE-GRI-L', stock: 3, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 12, productoId: 5, color: COLORES.grisMelange, talla: TALLAS_SUPERIOR.m, sku: 'BUZ-OVE-GRI-M', stock: 7, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 13, productoId: 5, color: COLORES.grisMelange, talla: TALLAS_SUPERIOR.l, sku: 'BUZ-OVE-GRI-L', stock: 3, stockReservado: 0, stockMinimo: 4, activo: true },
       { id: 14, productoId: 5, color: COLORES.negro, talla: TALLAS_SUPERIOR.m, sku: 'BUZ-OVE-NEG-M', stock: 10, stockReservado: 2, stockMinimo: 4, activo: true },
     ],
   },
   {
     id: 6,
-    categoria: CATEGORIAS.polleras,
-    nombre: 'Pollera tiro alto plisada',
-    descripcion: 'Pollera plisada, tiro alto, tela fluida',
-    precioBase: 22000,
+    categoria: CATEGORIAS.poleras,
+    nombre: 'Polera de morley suave',
+    descripcion: 'Polera ajustada de morley elastizado',
+    precioBase: 18000,
     activo: true,
     variantes: [
-      { id: 15, productoId: 6, color: COLORES.verdeMilitar, talla: TALLAS_INFERIOR.t38, sku: 'POL-PLI-VER-38', stock: 4, stockReservado: 0, stockMinimo: 3, activo: true },
-      { id: 16, productoId: 6, color: COLORES.verdeMilitar, talla: TALLAS_INFERIOR.t40, sku: 'POL-PLI-VER-40', stock: 1, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 15, productoId: 6, color: COLORES.verdeOliva, talla: TALLAS_SUPERIOR.s, sku: 'POL-MOR-VER-S', stock: 4, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 16, productoId: 6, color: COLORES.verdeOliva, talla: TALLAS_SUPERIOR.m, sku: 'POL-MOR-VER-M', stock: 1, stockReservado: 0, stockMinimo: 3, activo: true },
     ],
   },
   {
@@ -94,20 +94,20 @@ const productosMockBase: Producto[] = [
   },
   {
     id: 8,
-    categoria: CATEGORIAS.shorts,
-    nombre: 'Short de jean',
-    descripcion: 'Short de jean tiro alto, dobladillo crudo',
-    precioBase: 17000,
+    categoria: CATEGORIAS.tops,
+    nombre: 'Top morley ribb',
+    descripcion: 'Top corto de morley elastizado',
+    precioBase: 9500,
     activo: true,
     variantes: [
-      { id: 20, productoId: 8, color: COLORES.denim, talla: TALLAS_INFERIOR.t38, sku: 'SHO-JEA-DEN-38', stock: 8, stockReservado: 0, stockMinimo: 4, activo: true },
-      { id: 21, productoId: 8, color: COLORES.denim, talla: TALLAS_INFERIOR.t40, sku: 'SHO-JEA-DEN-40', stock: 3, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 20, productoId: 8, color: COLORES.arena, talla: TALLAS_SUPERIOR.s, sku: 'TOP-MOR-ARE-S', stock: 8, stockReservado: 0, stockMinimo: 4, activo: true },
+      { id: 21, productoId: 8, color: COLORES.dulceDeLeche, talla: TALLAS_SUPERIOR.m, sku: 'TOP-MOR-DUL-M', stock: 3, stockReservado: 0, stockMinimo: 4, activo: true },
     ],
   },
   {
     id: 9,
-    categoria: CATEGORIAS.remeras,
-    nombre: 'Musculosa canalé',
+    categoria: CATEGORIAS.musculosas,
+    nombre: 'Musculosa canalé bretel ancho',
     descripcion: 'Musculosa de canalé, escote redondo',
     precioBase: 11000,
     activo: true,
@@ -119,23 +119,18 @@ const productosMockBase: Producto[] = [
   },
   {
     id: 10,
-    categoria: CATEGORIAS.buzos,
-    nombre: 'Cárdigan tejido',
-    descripcion: 'Cárdigan de punto, abotonado',
-    precioBase: 31000,
+    categoria: CATEGORIAS.ofertas,
+    nombre: 'Top Morley Ribb (Oferta Especial)',
+    descripcion: 'Top de morley suave. Edición especial en oferta.',
+    precioBase: 7900,
     activo: true,
     variantes: [
-      { id: 25, productoId: 10, color: COLORES.beige, talla: TALLAS_SUPERIOR.m, sku: 'CAR-TEJ-BEI-M', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
-      { id: 26, productoId: 10, color: COLORES.beige, talla: TALLAS_SUPERIOR.l, sku: 'CAR-TEJ-BEI-L', stock: 0, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 25, productoId: 10, color: COLORES.arena, talla: TALLAS_SUPERIOR.m, sku: 'OFE-TOP-ARE-M', stock: 5, stockReservado: 0, stockMinimo: 3, activo: true },
+      { id: 26, productoId: 10, color: COLORES.dulceDeLeche, talla: TALLAS_SUPERIOR.l, sku: 'OFE-TOP-DUL-L', stock: 2, stockReservado: 0, stockMinimo: 3, activo: true },
     ],
   },
 ]
 
-// El array de arriba no pasa por crearProducto()/crearVariante(), así que
-// se les asigna acá el mismo código de barras que generaría la API real
-// (interno por variante + genérico por producto) — para poder ver/probar
-// el escaneo (docs/07-proceso-de-venta.md) sin tener que dar de alta un
-// producto nuevo primero.
 export const productosMock: Producto[] = productosMockBase.map((producto) => ({
   ...producto,
   codigoBarras: producto.codigoBarras ?? generarCodigoBarrasProducto(producto.id),

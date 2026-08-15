@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { listarCategorias } from '../../api/catalogos.api'
 import { buscarClientesParaVenta } from '../../api/clientes.api'
 import { buscarVariantesParaVenta, listarProductos } from '../../api/productos.api'
 import { crearPedido, crearVenta, type PagoInput } from '../../api/ventas.api'
-import { categoriasMock } from '../productos/mocks/catalogos.mock'
 import { SelectorColorTalle } from './components/SelectorColorTalle'
 import { TicketVentaModal } from './components/TicketVentaModal'
+import type { Categoria } from '../../types/categoria'
 import type { Cliente } from '../../types/cliente'
 import type { Color } from '../../types/color'
 import type { Producto } from '../../types/producto'
@@ -82,6 +83,7 @@ export function VentasPage() {
   } | null>(null)
 
   const [catalogo, setCatalogo] = useState<Producto[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [mostrarCatalogo, setMostrarCatalogo] = useState(true)
   const [categoriaCatalogo, setCategoriaCatalogo] = useState<number | 'todas'>('todas')
   const [productoExpandidoId, setProductoExpandidoId] = useState<number | null>(null)
@@ -109,10 +111,13 @@ export function VentasPage() {
 
   useEffect(() => {
     let cancelado = false
-    listarProductos({ activo: true }).then((datos) => {
-      if (cancelado) return
-      setCatalogo(datos)
-    })
+    Promise.all([listarProductos({ activo: true }), listarCategorias({ activo: true })]).then(
+      ([productosData, categoriasData]) => {
+        if (cancelado) return
+        setCatalogo(productosData)
+        setCategorias(categoriasData)
+      },
+    )
     return () => {
       cancelado = true
     }
@@ -461,7 +466,7 @@ export function VentasPage() {
                   >
                     Todas
                   </button>
-                  {categoriasMock.map((c) => (
+                  {categorias.map((c) => (
                     <button
                       key={c.id}
                       type="button"
