@@ -4,33 +4,33 @@ import type { MovimientoStock, TipoMovimientoStock } from '../../../types/movimi
 import type { Producto, ProductoVariante } from '../../../types/producto'
 
 const formatFecha = new Intl.DateTimeFormat('es-AR', {
-  dateStyle: 'medium',
+  dateStyle: 'short',
   timeStyle: 'short',
 })
 
-const NOMBRE_TIPO_MOVIMIENTO: Record<TipoMovimientoStock, { label: string; bg: string; text: string }> = {
-  INGRESO: { label: 'Reposición / Ingreso', bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  VENTA: { label: 'Venta POS', bg: 'bg-blue-100', text: 'text-blue-800' },
-  DEVOLUCION: { label: 'Devolución', bg: 'bg-purple-100', text: 'text-purple-800' },
-  RESERVA: { label: 'Reserva Pedido', bg: 'bg-amber-100', text: 'text-amber-800' },
-  LIBERA_RESERVA: { label: 'Libera Reserva', bg: 'bg-gray-100', text: 'text-gray-700' },
-  AJUSTE_POSITIVO: { label: 'Ajuste (+)', bg: 'bg-teal-100', text: 'text-teal-800' },
-  AJUSTE_NEGATIVO: { label: 'Ropa Fallada / Baja', bg: 'bg-rose-100', text: 'text-rose-800' },
+const NOMBRE_TIPO: Record<TipoMovimientoStock, string> = {
+  INGRESO: 'Reposición',
+  VENTA: 'Venta',
+  DEVOLUCION: 'Devolución',
+  RESERVA: 'Reserva',
+  LIBERA_RESERVA: 'Libera res.',
+  AJUSTE_POSITIVO: 'Ajuste (+)',
+  AJUSTE_NEGATIVO: 'Falla / Baja',
 }
 
-const MOTIVOS_FALLA = [
-  'Falla de confección / costura',
+const CHIPS_FALLA = [
+  'Falla de confección',
   'Tela fallada / agujero',
   'Mancha / desteñido',
-  'Rotura / enganche en local',
-  'Pérdida / faltante',
+  'Rotura en local',
+  'Faltante',
 ]
 
-const MOTIVOS_REPOSICION = [
-  'Reposición de taller / confección',
+const CHIPS_REPOSICION = [
+  'Reposición de taller',
   'Ingreso de proveedor',
-  'Devolución de mercadería a stock',
-  'Ajuste por recuento físico',
+  'Devolución a stock',
+  'Recuento físico',
 ]
 
 interface StockVarianteModalProps {
@@ -40,19 +40,15 @@ interface StockVarianteModalProps {
   onAjustado: () => void
 }
 
-type ModoOperacion = 'REPOSICION' | 'FALLA' | 'AJUSTE'
-
 export function StockVarianteModal({ producto, variante, onCerrar, onAjustado }: StockVarianteModalProps) {
   const [stockActual, setStockActual] = useState(variante.stock)
   const [movimientos, setMovimientos] = useState<MovimientoStock[] | null>(null)
 
-  const [modo, setModo] = useState<ModoOperacion>('REPOSICION')
+  const [esReposicion, setEsReposicion] = useState(true)
   const [cantidad, setCantidad] = useState(1)
   const [motivo, setMotivo] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const bajoMinimo = stockActual < variante.stockMinimo
 
   useEffect(() => {
     let cancelado = false
@@ -72,29 +68,23 @@ export function StockVarianteModal({ producto, variante, onCerrar, onAjustado }:
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onCerrar])
 
-  // Cálculo de nuevo stock resultante
-  const delta = modo === 'FALLA' ? -cantidad : cantidad
-  const nuevoStockCalculado = Math.max(0, stockActual + delta)
+  const delta = esReposicion ? cantidad : -cantidad
+  const nuevoStock = Math.max(0, stockActual + delta)
 
-  const handleAjustar = async () => {
+  const handleGuardar = async () => {
     setError(null)
     if (!cantidad || cantidad <= 0) {
-      setError('Ingresá una cantidad mayor a 0.')
+      setError('Ingresá una cantidad válida.')
       return
     }
 
-    if (modo === 'FALLA' && cantidad > stockActual) {
-      setError(`No podés descontar ${cantidad} unidades porque solo hay ${stockActual} en stock.`)
+    if (!esReposicion && cantidad > stockActual) {
+      setError(`Solo hay ${stockActual} unidades disponibles en stock.`)
       return
     }
 
-    const tipoFinal: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO' =
-      modo === 'FALLA' ? 'AJUSTE_NEGATIVO' : 'AJUSTE_POSITIVO'
-
-    let motivoFinal = motivo.trim()
-    if (!motivoFinal) {
-      motivoFinal = modo === 'FALLA' ? 'Ropa fallada / falla de confección' : 'Reposición de stock'
-    }
+    const tipoFinal = esReposicion ? 'AJUSTE_POSITIVO' : 'AJUSTE_NEGATIVO'
+    const motivoFinal = motivo.trim() || (esReposicion ? 'Reposición de stock' : 'Ropa fallada')
 
     setGuardando(true)
     try {
@@ -104,337 +94,247 @@ export function StockVarianteModal({ producto, variante, onCerrar, onAjustado }:
         tipo: tipoFinal,
         motivo: motivoFinal,
       })
-      const nuevoStock = stockActual + (tipoFinal === 'AJUSTE_POSITIVO' ? cantidad : -cantidad)
-      setStockActual(nuevoStock)
+      setStockActual((prev) => prev + (esReposicion ? cantidad : -cantidad))
       setCantidad(1)
       setMotivo('')
       listarMovimientos(variante.id).then(setMovimientos)
       onAjustado()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar el movimiento')
+      setError(err instanceof Error ? err.message : 'Error al guardar el ajuste')
     } finally {
       setGuardando(false)
     }
   }
 
-  const presets = modo === 'REPOSICION' ? [1, 2, 5, 10, 20, 50] : [1, 2, 3, 5]
-  const motivosSugeridos = modo === 'FALLA' ? MOTIVOS_FALLA : MOTIVOS_REPOSICION
+  const presets = esReposicion ? [1, 2, 5, 10, 20] : [1, 2, 3, 5]
+  const chips = esReposicion ? CHIPS_REPOSICION : CHIPS_FALLA
 
   return (
     <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
       onClick={onCerrar}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-all"
+        className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cabecera Principal */}
-        <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <span className="inline-block rounded-full bg-gray-200/80 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                {producto.categoria?.nombre ?? 'Indumentaria'}
+        {/* Cabecera Sobria */}
+        <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">{producto.nombre}</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full border border-gray-300"
+                  style={{ backgroundColor: variante.color?.codigoHex }}
+                />
+                {variante.color?.nombre}
               </span>
-              <h2 className="mt-1 text-xl font-bold text-gray-900">{producto.nombre}</h2>
-              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                <span className="inline-flex items-center gap-1.5 font-medium text-gray-800">
-                  <span
-                    className="h-3.5 w-3.5 rounded-full border border-gray-300 shadow-sm"
-                    style={{ backgroundColor: variante.color?.codigoHex }}
-                  />
-                  {variante.color?.nombre}
-                </span>
-                <span className="text-gray-300">•</span>
-                <span className="rounded bg-gray-100 px-2 py-0.5 font-semibold text-gray-800">
-                  Talle {variante.talla?.nombre}
-                </span>
-                <span className="text-gray-300">•</span>
-                <span className="font-mono text-xs text-gray-500">SKU: {variante.sku}</span>
-              </div>
-            </div>
+              {' · '}
+              <span>Talle {variante.talla?.nombre}</span>
+              {' · '}
+              <span className="font-mono text-[11px]">{variante.sku}</span>
+            </p>
+          </div>
 
-            {/* Tarjeta de Stock Actual */}
-            <div
-              className={`flex flex-col items-end rounded-xl border px-4 py-2.5 ${
-                bajoMinimo
-                  ? 'border-amber-200 bg-amber-50/80 text-amber-900'
-                  : 'border-emerald-200 bg-emerald-50/80 text-emerald-900'
-              }`}
-            >
-              <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Stock Actual</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black">{stockActual}</span>
-                <span className="text-xs text-gray-500">unidades</span>
-              </div>
-              <span className="text-[11px] text-gray-500">Mínimo sugerido: {variante.stockMinimo}</span>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Stock actual</p>
+              <p className="text-lg font-bold text-gray-900">
+                {stockActual}{' '}
+                <span className="text-xs font-normal text-gray-400">/ mín {variante.stockMinimo}</span>
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={onCerrar}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              aria-label="Cerrar modal"
+              title="Cerrar (Esc)"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
-        {/* Cuerpo del Modal con Scroll */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
-              <span className="text-base font-bold">⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
+        {error && (
+          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>
+        )}
 
-          {/* Selector de Modo de Operación */}
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-              ¿Qué operación querés realizar?
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setModo('REPOSICION')
-                  setMotivo('')
-                }}
-                className={`flex items-center justify-center gap-2.5 rounded-xl border-2 p-3.5 text-sm font-bold transition-all ${
-                  modo === 'REPOSICION'
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-800 shadow-sm'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white font-black text-base">
-                  +
-                </span>
-                <div className="text-left">
-                  <p className="leading-none">Reposición de Stock</p>
-                  <p className="text-[11px] font-normal text-emerald-700 mt-0.5">Ingreso de taller o proveedor</p>
-                </div>
-              </button>
+        {/* Segmented Control Minimalista */}
+        <div className="mt-4 grid grid-cols-2 rounded-lg bg-gray-100 p-0.5 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => {
+              setEsReposicion(true)
+              setMotivo('')
+            }}
+            className={`rounded-md py-1.5 transition-all ${
+              esReposicion
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            + Reposición de stock
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEsReposicion(false)
+              setMotivo('')
+            }}
+            className={`rounded-md py-1.5 transition-all ${
+              !esReposicion
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            − Ropa fallada / Merma
+          </button>
+        </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setModo('FALLA')
-                  setMotivo('')
-                }}
-                className={`flex items-center justify-center gap-2.5 rounded-xl border-2 p-3.5 text-sm font-bold transition-all ${
-                  modo === 'FALLA'
-                    ? 'border-rose-600 bg-rose-50 text-rose-800 shadow-sm'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white font-black text-base">
-                  −
-                </span>
-                <div className="text-left">
-                  <p className="leading-none">Ropa Fallada / Merma</p>
-                  <p className="text-[11px] font-normal text-rose-700 mt-0.5">Falla de tela, costura o rotura</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Selector de Cantidad Grande y Cómodo */}
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">
-                  Cantidad a {modo === 'REPOSICION' ? 'ingresar' : 'descontar'}
-                </label>
-                <p className="text-xs text-gray-400 mt-0.5">Seleccioná un valor rápido o ingresalo manualmente</p>
-              </div>
-
-              {/* Control numérico interactivo */}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCantidad((c) => Math.max(1, c - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 bg-white text-lg font-bold text-gray-700 hover:bg-gray-100 active:scale-95 transition-all shadow-sm"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  min={1}
-                  value={cantidad}
-                  onChange={(e) => setCantidad(Math.max(1, Number(e.target.value) || 1))}
-                  className="h-10 w-20 rounded-xl border-2 border-gray-300 bg-white text-center text-xl font-extrabold text-gray-900 focus:border-gray-900 focus:outline-none shadow-inner"
-                />
-                <button
-                  type="button"
-                  onClick={() => setCantidad((c) => c + 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 bg-white text-lg font-bold text-gray-700 hover:bg-gray-100 active:scale-95 transition-all shadow-sm"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Presets Rápidos */}
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200/60 pt-3">
-              <span className="text-xs font-medium text-gray-500">Valores rápidos:</span>
-              {presets.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setCantidad(p)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                    cantidad === p
-                      ? 'bg-gray-900 text-white shadow-sm'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {modo === 'REPOSICION' ? `+${p}` : `${p}`}
-                </button>
-              ))}
-
-              {/* Resumen del impacto en el stock */}
-              <div className="ml-auto text-xs font-semibold text-gray-700">
-                Resultado: <span className="font-bold text-gray-900">{stockActual}</span> ➔{' '}
-                <span className={`font-black text-sm ${modo === 'REPOSICION' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  {nuevoStockCalculado} uds
-                </span>{' '}
-                <span className="text-gray-400">({delta > 0 ? `+${delta}` : delta})</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Motivo (Chips Rápidos + Input Opcional) */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">
-                Motivo del movimiento <span className="font-normal text-gray-400">(Opcional)</span>
-              </label>
-              <span className="text-[11px] text-gray-400">No es obligatorio rellenarlo</span>
-            </div>
-
-            {/* Chips rápidos de 1 clic */}
-            <div className="flex flex-wrap gap-2 mb-2.5">
-              {motivosSugeridos.map((m) => {
-                const activo = motivo === m
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMotivo(activo ? '' : m)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                      activo
-                        ? modo === 'FALLA'
-                          ? 'bg-rose-600 text-white shadow-sm'
-                          : 'bg-emerald-700 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                )
-              })}
-            </div>
-
-            <input
-              type="text"
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder={
-                modo === 'FALLA'
-                  ? 'Ej. Mancha de tinta en el escote, falla de corte (opcional)...'
-                  : 'Ej. Reposición de taller 15 prendas (opcional)...'
-              }
-              className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none shadow-sm"
-            />
-          </div>
-
-          {/* Botón de Confirmación Principal */}
-          <div>
+        {/* Cantidad y Presets */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={handleAjustar}
-              disabled={guardando}
-              className={`w-full rounded-xl py-3.5 text-base font-bold text-white shadow-md transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 ${
-                modo === 'REPOSICION'
-                  ? 'bg-emerald-600 hover:bg-emerald-700'
-                  : 'bg-rose-600 hover:bg-rose-700'
-              }`}
+              onClick={() => setCantidad((c) => Math.max(1, c - 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              {guardando
-                ? 'Registrando movimiento...'
-                : modo === 'REPOSICION'
-                ? `Confirmar Reposición (+${cantidad} ${cantidad === 1 ? 'unidad' : 'unidades'})`
-                : `Registrar Baja por Ropa Fallada (-${cantidad} ${cantidad === 1 ? 'unidad' : 'unidades'})`}
+              −
+            </button>
+            <input
+              type="number"
+              min={1}
+              value={cantidad}
+              onChange={(e) => setCantidad(Math.max(1, Number(e.target.value) || 1))}
+              className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm font-bold text-gray-900 focus:border-gray-900 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setCantidad((c) => c + 1)}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              +
             </button>
           </div>
 
-          {/* Historial de Movimientos Completo */}
-          <div className="border-t border-gray-100 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Historial y Trazabilidad de esta Variante
-              </h3>
-              {movimientos && (
-                <span className="text-xs text-gray-400">{movimientos.length} movimientos registrados</span>
-              )}
-            </div>
-
-            <div className="max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white">
-              {movimientos === null && (
-                <div className="p-4 text-center text-xs text-gray-500">Cargando movimientos...</div>
-              )}
-              {movimientos !== null && movimientos.length === 0 && (
-                <div className="p-4 text-center text-xs text-gray-500">Aún no hay movimientos registrados para esta prenda.</div>
-              )}
-              {movimientos !== null && movimientos.length > 0 && (
-                <table className="min-w-full divide-y divide-gray-100 text-xs">
-                  <thead className="bg-gray-50 text-gray-500">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold">Fecha</th>
-                      <th className="px-3 py-2 text-left font-semibold">Tipo</th>
-                      <th className="px-3 py-2 text-right font-semibold">Cantidad</th>
-                      <th className="px-3 py-2 text-left font-semibold">Motivo / Detalle</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {movimientos.map((m) => {
-                      const tipoInfo = NOMBRE_TIPO_MOVIMIENTO[m.tipo] ?? {
-                        label: m.tipo,
-                        bg: 'bg-gray-100',
-                        text: 'text-gray-700',
-                      }
-                      return (
-                        <tr key={m.id} className="hover:bg-gray-50/80">
-                          <td className="whitespace-nowrap px-3 py-2.5 text-gray-500 font-mono text-[11px]">
-                            {formatFecha.format(new Date(m.fecha))}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-2.5">
-                            <span className={`inline-block rounded-md px-2 py-0.5 font-medium ${tipoInfo.bg} ${tipoInfo.text}`}>
-                              {tipoInfo.label}
-                            </span>
-                          </td>
-                          <td
-                            className={`whitespace-nowrap px-3 py-2.5 text-right font-bold text-sm ${
-                              m.cantidad < 0 ? 'text-rose-600' : 'text-emerald-700'
-                            }`}
-                          >
-                            {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}
-                          </td>
-                          <td className="px-3 py-2.5 text-gray-700 font-medium">
-                            {m.motivo ?? '—'}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
+          {/* Presets Rápidos */}
+          <div className="flex items-center gap-1">
+            {presets.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCantidad(p)}
+                className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                  cantidad === p
+                    ? 'bg-gray-900 text-white'
+                    : 'border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {esReposicion ? `+${p}` : `${p}`}
+              </button>
+            ))}
           </div>
+
+          <p className="text-xs text-gray-500">
+            Queda en: <span className="font-bold text-gray-900">{nuevoStock}</span>
+          </p>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-100 bg-gray-50 px-6 py-3 flex justify-end">
+        {/* Motivos Rápidos (Chips sobrios) */}
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((c) => {
+              const activo = motivo === c
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setMotivo(activo ? '' : c)}
+                  className={`rounded-full px-2.5 py-0.5 text-xs transition-colors ${
+                    activo
+                      ? 'bg-gray-900 text-white'
+                      : 'border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {c}
+                </button>
+              )
+            })}
+          </div>
+
+          <input
+            type="text"
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder={
+              esReposicion ? 'Detalle o remito (opcional)...' : 'Detalle de la falla (opcional)...'
+            }
+            className="mt-2 w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
+          />
+        </div>
+
+        {/* Botón de Confirmación */}
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-gray-100 pt-3">
           <button
             type="button"
             onClick={onCerrar}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+            className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
           >
-            Cerrar
+            Cancelar
           </button>
+          <button
+            type="button"
+            onClick={handleGuardar}
+            disabled={guardando}
+            className="rounded-md bg-gray-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-black disabled:opacity-50 transition-colors"
+          >
+            {guardando
+              ? 'Guardando...'
+              : esReposicion
+              ? `Registrar ingreso (+${cantidad})`
+              : `Registrar baja (-${cantidad})`}
+          </button>
+        </div>
+
+        {/* Historial Compacto */}
+        <div className="mt-3 border-t border-gray-100 pt-2.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 mb-1.5">
+            Últimos movimientos
+          </p>
+          <div className="max-h-36 overflow-y-auto">
+            {movimientos === null && <p className="text-xs text-gray-400">Cargando...</p>}
+            {movimientos !== null && movimientos.length === 0 && (
+              <p className="text-xs text-gray-400">Sin movimientos registrados.</p>
+            )}
+            {movimientos !== null && movimientos.length > 0 && (
+              <table className="w-full text-xs">
+                <tbody className="divide-y divide-gray-50">
+                  {movimientos.slice(0, 10).map((m) => (
+                    <tr key={m.id}>
+                      <td className="py-1 pr-2 text-gray-400 whitespace-nowrap">
+                        {formatFecha.format(new Date(m.fecha))}
+                      </td>
+                      <td className="py-1 pr-2 text-gray-700 whitespace-nowrap">
+                        {NOMBRE_TIPO[m.tipo] ?? m.tipo}
+                      </td>
+                      <td
+                        className={`py-1 pr-2 text-right font-medium whitespace-nowrap ${
+                          m.cantidad < 0 ? 'text-red-600' : 'text-emerald-700'
+                        }`}
+                      >
+                        {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}
+                      </td>
+                      <td className="py-1 text-gray-500 truncate max-w-[180px]">
+                        {m.motivo ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </div>

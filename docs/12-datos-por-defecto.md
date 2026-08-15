@@ -45,6 +45,10 @@ Este documento especifica la información base y los datos de prueba oficiales p
 - **Pantalón Dralón Wide Leg con Pinzas**: $29.900 (Dralón de invierno abrigado con pinzas frontales).
 - **Sweater Dralón Escote Redondo Oversize**: $32.000 (Tejido dralón punto fino y mangas amplias).
 
+### C. Ofertas, Retazos y Segunda Selección (`Ofertas / Retazos y Outlet`)
+- **Top Morley Retazos Combinados (Pieza Única)**: $7.900 (Confección artesanal con retazos de morley, piezas únicas).
+- **Pantalón Dralón con Detalle / Segunda Selección**: $16.500 (Prenda con leve detalle de confección o tara).
+
 ---
 
 ## 4. Curva de Talles Oficial

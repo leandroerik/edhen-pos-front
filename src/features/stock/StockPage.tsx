@@ -181,9 +181,9 @@ export function StockPage() {
                                       <button
                                         type="button"
                                         onClick={() => setSeleccion({ producto: grupo.producto, variante })}
-                                        className="text-xs font-medium text-gray-700 hover:text-gray-900"
+                                        className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-all active:scale-95"
                                       >
-                                        Ajustar
+                                        + / − Stock
                                       </button>
                                     </td>
                                   </tr>
