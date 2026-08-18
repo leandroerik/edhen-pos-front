@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buscarClientesParaVenta, listarDirecciones, obtenerCliente } from '../../api/clientes.api'
-import { crearEnvio } from '../../api/envios.api'
+import { crearEnvio, crearTransportista, listarTransportistas } from '../../api/envios.api'
 import { buscarVentasParaEnvio, listarVentas } from '../../api/ventas.api'
 import type { Cliente } from '../../types/cliente'
 import type { Direccion } from '../../types/direccion'
 import type { EstadoVenta, Venta } from '../../types/venta'
+import type { Transportista } from '../../types/envio'
 
 const NOMBRE_ESTADO_VENTA: Record<EstadoVenta, string> = {
   PENDIENTE: 'Pendiente',
@@ -39,10 +40,14 @@ export function EnvioFormPage() {
 
   const [direcciones, setDirecciones] = useState<Direccion[] | null>(null)
   const [direccionId, setDireccionId] = useState<number | null>(null)
+  const [direccionOriginalId, setDireccionOriginalId] = useState<number | null>(null)
 
-  const [transportista, setTransportista] = useState('')
-  const [costoEnvio, setCostoEnvio] = useState('')
-  const [fechaEstimada, setFechaEstimada] = useState('')
+  const [transportistas, setTransportistas] = useState<Transportista[] | null>(null)
+  const [transportistaId, setTransportistaId] = useState<number | null>(null)
+  const [transportistaCustom, setTransportistaCustom] = useState('')
+  const [mostrarFormAgregar, setMostrarFormAgregar] = useState(false)
+  const [nuevoTransportistaNombre, setNuevoTransportistaNombre] = useState('')
+  const [agregandoTransportista, setAgregandoTransportista] = useState(false)
 
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +62,23 @@ export function EnvioFormPage() {
       cancelado = true
     }
   }, [reloadPendientes])
+
+  useEffect(() => {
+    let cancelado = false
+    listarTransportistas().then((datos) => {
+      if (cancelado) return
+      setTransportistas(datos)
+      const genericos = datos.filter((t) => t.esGenerico)
+      if (genericos.length > 0) {
+        setTransportistaId(genericos[0].id)
+      } else if (datos.length > 0) {
+        setTransportistaId(datos[0].id)
+      }
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [])
 
   useEffect(() => {
     const timeout = setTimeout(() => setTerminoVentaDebounced(busquedaVenta), 250)
@@ -100,8 +122,6 @@ export function EnvioFormPage() {
   const resultados =
     terminoDebounced.trim() && resultadoClientes?.clave === terminoDebounced ? resultadoClientes.datos : []
 
-  // Si la venta elegida ya tiene cliente, lo autocompleta — es el caso más
-  // común al armar el envío de un pedido pendiente.
   useEffect(() => {
     if (!ventaSeleccionada?.cliente) return
     let cancelado = false
@@ -120,7 +140,9 @@ export function EnvioFormPage() {
     listarDirecciones(clienteSeleccionado.id).then((datos) => {
       if (cancelado) return
       setDirecciones(datos)
-      setDireccionId(datos.find((d) => d.esPrincipal)?.id ?? datos[0]?.id ?? null)
+      const principal = datos.find((d) => d.esPrincipal)?.id ?? datos[0]?.id ?? null
+      setDireccionId(principal)
+      setDireccionOriginalId(principal)
     })
     return () => {
       cancelado = true
@@ -131,6 +153,28 @@ export function EnvioFormPage() {
     setVentaSeleccionada(venta)
     setBusquedaVenta('')
   }
+
+  const handleAgregarTransportista = async () => {
+    if (!nuevoTransportistaNombre.trim()) return
+    setAgregandoTransportista(true)
+    try {
+      const nuevo = await crearTransportista({ nombre: nuevoTransportistaNombre.trim() })
+      setTransportistas((prev) => prev ? [...prev, nuevo] : [nuevo])
+      setTransportistaId(nuevo.id)
+      setTransportistaCustom('')
+      setNuevoTransportistaNombre('')
+      setMostrarFormAgregar(false)
+    } catch {
+      setError('No se pudo agregar el transportista')
+    } finally {
+      setAgregandoTransportista(false)
+    }
+  }
+
+  const transportistaSeleccionado = transportistas?.find((t) => t.id === transportistaId)
+  const esGenerico = transportistaSeleccionado?.esGenerico ?? false
+
+  const direccionCambiada = direccionId !== null && direccionOriginalId !== null && direccionId !== direccionOriginalId
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -144,9 +188,18 @@ export function EnvioFormPage() {
       setError('Elegí una dirección de entrega.')
       return
     }
-    if (!transportista.trim() || !costoEnvio || !fechaEstimada) {
-      setError('Completá transportista, costo y fecha estimada de entrega.')
+    if (!transportistaId && !transportistaCustom.trim()) {
+      setError('Elegí un transportista o escribí uno.')
       return
+    }
+
+    if (direccionCambiada) {
+      const confirmar = window.confirm(
+        'La dirección elegida es distinta a la principal del cliente. ¿Querés actualizar la dirección principal del cliente con esta nueva?',
+      )
+      if (confirmar) {
+        // TODO:llamar a updateDireccion para marcar como principal
+      }
     }
 
     setGuardando(true)
@@ -155,9 +208,8 @@ export function EnvioFormPage() {
         clienteId: clienteSeleccionado.id,
         direccionId,
         ventaId: ventaSeleccionada?.id,
-        transportista: transportista.trim(),
-        costoEnvio: Number(costoEnvio),
-        fechaEstimadaEntrega: fechaEstimada,
+        transportistaId: esGenerico ? undefined : transportistaId ?? undefined,
+        transportista: esGenerico ? transportistaCustom.trim() || undefined : undefined,
       })
       setReloadPendientes((v) => v + 1)
       navigate('/envios')
@@ -256,6 +308,7 @@ export function EnvioFormPage() {
                     setClienteSeleccionado(null)
                     setDirecciones(null)
                     setDireccionId(null)
+                    setDireccionOriginalId(null)
                   }}
                   className="text-xs text-red-600 hover:text-red-800"
                 >
@@ -338,44 +391,93 @@ export function EnvioFormPage() {
                     ))}
                   </div>
                 )}
+                {direccionCambiada && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    ⚠ Elegiste una dirección distinta a la principal. Se te preguntará si querés actualizarla.
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2">
-            <label className="text-sm text-gray-700">
-              Transportista
-              <input
-                type="text"
-                value={transportista}
-                onChange={(e) => setTransportista(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-                required
-              />
-            </label>
-
-            <label className="text-sm text-gray-700">
-              Costo de envío
-              <input
-                type="number"
-                min={0}
-                value={costoEnvio}
-                onChange={(e) => setCostoEnvio(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-                required
-              />
-            </label>
-
-            <label className="text-sm text-gray-700">
-              Fecha estimada de entrega
-              <input
-                type="date"
-                value={fechaEstimada}
-                onChange={(e) => setFechaEstimada(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-                required
-              />
-            </label>
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <p className="text-sm text-gray-700">Transportista</p>
+            {transportistas === null ? (
+              <p className="mt-1 text-sm text-gray-500">Cargando...</p>
+            ) : (
+              <div className="mt-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {transportistas.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setTransportistaId(t.id)
+                        setTransportistaCustom('')
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-sm ${
+                        transportistaId === t.id
+                          ? 'border-gray-900 bg-gray-900 text-white'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {t.nombre}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormAgregar(!mostrarFormAgregar)}
+                    className="rounded-full border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+                {mostrarFormAgregar && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={nuevoTransportistaNombre}
+                      onChange={(e) => setNuevoTransportistaNombre(e.target.value)}
+                      placeholder="Nombre del nuevo transportista"
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAgregarTransportista()
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAgregarTransportista}
+                      disabled={!nuevoTransportistaNombre.trim() || agregandoTransportista}
+                      className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      {agregandoTransportista ? '...' : 'Guardar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMostrarFormAgregar(false)
+                        setNuevoTransportistaNombre('')
+                      }}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+                {esGenerico && (
+                  <input
+                    type="text"
+                    value={transportistaCustom}
+                    onChange={(e) => setTransportistaCustom(e.target.value)}
+                    placeholder="Nombre del transportista (ej: Moto, Correo local...)"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">

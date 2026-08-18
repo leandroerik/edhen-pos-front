@@ -8,6 +8,7 @@ const navItems = [
   { to: '/stock', label: 'Stock' },
   { to: '/clientes', label: 'Clientes' },
   { to: '/envios', label: 'Envíos' },
+  { to: '/reportes', label: 'Reportes' },
 ]
 
 export function Sidebar() {

@@ -10,4 +10,5 @@ export interface Cliente {
   dni?: string
   fechaRegistro: string
   activo: boolean
+  esGenerico?: boolean
 }

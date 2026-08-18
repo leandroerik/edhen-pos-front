@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listarCategorias } from '../../api/catalogos.api'
-import { buscarClientesParaVenta } from '../../api/clientes.api'
+import { buscarClientesParaVenta, obtenerClienteGenerico } from '../../api/clientes.api'
 import { buscarVariantesParaVenta, listarProductos } from '../../api/productos.api'
 import { crearPedido, crearVenta, type PagoInput } from '../../api/ventas.api'
 import { SelectorColorTalle } from './components/SelectorColorTalle'
 import { TicketVentaModal } from './components/TicketVentaModal'
 import type { Categoria } from '../../types/categoria'
-import type { Cliente } from '../../types/cliente'
+import type { Cliente, TipoCliente } from '../../types/cliente'
 import type { Color } from '../../types/color'
 import type { Producto } from '../../types/producto'
 import type { Talla } from '../../types/talla'
@@ -96,6 +96,10 @@ export function VentasPage() {
   const [resultadoClientes, setResultadoClientes] = useState<{ clave: string; datos: Cliente[] } | null>(
     null,
   )
+  const [genericos, setGenericos] = useState<{ MINORISTA: Cliente | null; MAYORISTA: Cliente | null }>({
+    MINORISTA: null,
+    MAYORISTA: null,
+  })
 
   const [descuentoTotal, setDescuentoTotal] = useState('')
   const [pagos, setPagos] = useState<PagoLinea[]>([
@@ -111,13 +115,18 @@ export function VentasPage() {
 
   useEffect(() => {
     let cancelado = false
-    Promise.all([listarProductos({ activo: true }), listarCategorias({ activo: true })]).then(
-      ([productosData, categoriasData]) => {
-        if (cancelado) return
-        setCatalogo(productosData)
-        setCategorias(categoriasData)
-      },
-    )
+    Promise.all([
+      listarProductos({ activo: true }),
+      listarCategorias({ activo: true }),
+      obtenerClienteGenerico('MINORISTA'),
+      obtenerClienteGenerico('MAYORISTA'),
+    ]).then(([productosData, categoriasData, genMinorista, genMayorista]) => {
+      if (cancelado) return
+      setCatalogo(productosData)
+      setCategorias(categoriasData)
+      setGenericos({ MINORISTA: genMinorista, MAYORISTA: genMayorista })
+      setClienteSeleccionado(genMinorista)
+    })
     return () => {
       cancelado = true
     }
@@ -605,36 +614,36 @@ export function VentasPage() {
           )}
 
           <div className="mt-4 border-t border-gray-100 pt-3">
-            <p className="text-sm text-gray-700">Cliente</p>
-            {clienteSeleccionado ? (
-              <div className="mt-1 flex items-center justify-between rounded-md border border-gray-300 px-3 py-2 text-sm">
-                <span className="text-gray-900">
-                  {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
-                  <span className="ml-1 text-xs text-gray-400">
-                    ({NOMBRE_TIPO_CLIENTE[clienteSeleccionado.tipo]})
-                  </span>
-                </span>
+            <div className="mt-1 flex items-center gap-1.5">
+              {(['MINORISTA', 'MAYORISTA'] as TipoCliente[]).map((tipo) => (
                 <button
+                  key={tipo}
                   type="button"
-                  onClick={() => setClienteSeleccionado(null)}
-                  className="text-xs text-red-600 hover:text-red-800"
+                  onClick={() => {
+                    const gen = genericos[tipo]
+                    if (gen) setClienteSeleccionado(gen)
+                  }}
+                  className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    clienteSeleccionado?.tipo === tipo && clienteSeleccionado?.esGenerico
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  ✕
+                  {NOMBRE_TIPO_CLIENTE[tipo]}
                 </button>
-              </div>
-            ) : (
-              <div className="relative mt-1">
+              ))}
+              <div className="relative flex-1">
                 <input
                   type="text"
                   value={busquedaCliente}
                   onChange={(e) => setBusquedaCliente(e.target.value)}
-                  placeholder="Venta mostrador (opcional: buscar cliente)"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  placeholder="Buscar..."
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-gray-500 focus:outline-none"
                 />
                 {busquedaCliente.trim() && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-sm">
+                  <div className="absolute z-10 mt-1 max-h-36 overflow-y-auto w-full rounded-md border border-gray-200 bg-white shadow-sm">
                     {resultadosClientes.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-gray-500">Sin resultados.</p>
+                      <p className="px-2 py-1.5 text-xs text-gray-500">Sin resultados.</p>
                     )}
                     {resultadosClientes.map((cliente) => (
                       <button
@@ -644,18 +653,25 @@ export function VentasPage() {
                           setClienteSeleccionado(cliente)
                           setBusquedaCliente('')
                         }}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        className="flex w-full items-center justify-between px-2 py-1.5 text-left text-xs hover:bg-gray-50"
                       >
-                        <span>
-                          {cliente.nombre} {cliente.apellido}
-                        </span>
-                        <span className="text-xs text-gray-400">{NOMBRE_TIPO_CLIENTE[cliente.tipo]}</span>
+                        <span>{cliente.nombre} {cliente.apellido}</span>
+                        <span className="text-[10px] text-gray-400">{NOMBRE_TIPO_CLIENTE[cliente.tipo]}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-            )}
+              {clienteSeleccionado && !clienteSeleccionado.esGenerico && (
+                <button
+                  type="button"
+                  onClick={() => setClienteSeleccionado(null)}
+                  className="shrink-0 text-[10px] text-red-600 hover:text-red-800"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           <label className="mt-3 block text-sm text-gray-700">

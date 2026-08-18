@@ -5,6 +5,7 @@ import { EnvioFormPage } from './features/envios/EnvioFormPage'
 import { EnviosPage } from './features/envios/EnviosPage'
 import { InicioPage } from './features/inicio/InicioPage'
 import { ColaEtiquetasProvider } from './features/productos/context/ColaEtiquetasContext'
+import { ReportesPage } from './features/reportes/ReportesPage'
 import { EtiquetaProductoPage } from './features/productos/EtiquetaProductoPage'
 import { EtiquetaVariantePage } from './features/productos/EtiquetaVariantePage'
 import { EtiquetasColaPage } from './features/productos/EtiquetasColaPage'
@@ -41,6 +42,7 @@ function App() {
             <Route path="clientes/:id/editar" element={<ClienteFormPage />} />
             <Route path="envios" element={<EnviosPage />} />
             <Route path="envios/nuevo" element={<EnvioFormPage />} />
+            <Route path="reportes" element={<ReportesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

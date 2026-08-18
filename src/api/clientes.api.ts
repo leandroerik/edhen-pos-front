@@ -62,6 +62,11 @@ export async function buscarClientesParaVenta(texto: string): Promise<Cliente[]>
   return res.data
 }
 
+export async function obtenerClienteGenerico(tipo: TipoCliente): Promise<Cliente> {
+  const res = await apiClient.get<Cliente>('/api/clientes/generico', { params: { tipo } })
+  return res.data
+}
+
 // --- Direcciones (Cliente 1─N Direccion) ---
 
 export interface DireccionInput {

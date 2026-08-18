@@ -9,8 +9,6 @@ const formatPrecio = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 })
 
-const formatFecha = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short' })
-
 const NOMBRE_ESTADO: Record<EstadoEnvio, string> = {
   PENDIENTE: 'Pendiente',
   PREPARANDO: 'Preparando',
@@ -133,12 +131,6 @@ export function EnviosPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Transportista
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Costo
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Est. entrega
-              </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Estado
               </th>
@@ -150,14 +142,14 @@ export function EnviosPage() {
           <tbody className="divide-y divide-gray-100">
             {cargando && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
                   Cargando...
                 </td>
               </tr>
             )}
             {!cargando && envios.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
                   Todavía no hay envíos registrados.
                 </td>
               </tr>
@@ -179,12 +171,6 @@ export function EnviosPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{envio.transportista}</td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-900">
-                      {formatPrecio.format(envio.costoEnvio)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {formatFecha.format(new Date(envio.fechaEstimadaEntrega))}
-                    </td>
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLOR_ESTADO[envio.estadoEnvio]}`}
