@@ -1,13 +1,8 @@
 import { useState } from 'react'
 import type { Venta } from '../../../types/venta'
+import { formatPrecio } from '../../../shared/format'
 import { agruparPorDia, agruparPorSemana } from '../lib/agregaciones'
 import { exportarCsv } from '../lib/exportarCsv'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
 
 const formatDiaCorto = new Intl.DateTimeFormat('es-AR', { weekday: 'short' })
 const formatFechaCorta = new Intl.DateTimeFormat('es-AR', {

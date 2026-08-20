@@ -6,6 +6,7 @@ import {
   listarDirecciones,
   type DireccionInput,
 } from '../../../api/clientes.api'
+import { ConfirmModal } from '../../../shared/components/ConfirmModal'
 import type { Direccion } from '../../../types/direccion'
 
 interface DireccionesClienteProps {
@@ -27,6 +28,7 @@ export function DireccionesCliente({ clienteId }: DireccionesClienteProps) {
   const [form, setForm] = useState<DireccionInput>(FORM_VACIO)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [direccionAEliminar, setDireccionAEliminar] = useState<number | null>(null)
 
   const cargar = () => {
     listarDirecciones(clienteId).then(setDirecciones)
@@ -155,7 +157,7 @@ export function DireccionesCliente({ clienteId }: DireccionesClienteProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => eliminar(d.id)}
+                    onClick={() => setDireccionAEliminar(d.id)}
                     className="font-medium text-red-600 hover:text-red-800"
                   >
                     Eliminar
@@ -247,6 +249,21 @@ export function DireccionesCliente({ clienteId }: DireccionesClienteProps) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        abierto={direccionAEliminar !== null}
+        titulo="Eliminar dirección"
+        mensaje="¿Seguro que querés eliminar esta dirección? Esta acción no se puede deshacer."
+        textoAccion="Eliminar"
+        variant="danger"
+        onConfirmar={async () => {
+          if (direccionAEliminar !== null) {
+            await eliminar(direccionAEliminar)
+            setDireccionAEliminar(null)
+          }
+        }}
+        onCancelar={() => setDireccionAEliminar(null)}
+      />
     </div>
   )
 }

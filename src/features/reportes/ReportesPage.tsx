@@ -3,6 +3,7 @@ import { listarEnvios } from '../../api/envios.api'
 import { listarProductos } from '../../api/productos.api'
 import { listarStock } from '../../api/stock.api'
 import { listarVentas } from '../../api/ventas.api'
+import { toInputDate } from '../../shared/format'
 import type { Envio } from '../../types/envio'
 import type { Producto, ProductoVariante } from '../../types/producto'
 import type { Venta } from '../../types/venta'
@@ -18,13 +19,6 @@ import { StockReporteCard } from './components/StockReporteCard'
 import { VentasPorCategoriaCard } from './components/VentasPorCategoriaCard'
 import { VentasPorPeriodoCard } from './components/VentasPorPeriodoCard'
 import { VentasPorVarianteCard } from './components/VentasPorVarianteCard'
-
-function toInputDate(fecha: Date): string {
-  const y = fecha.getFullYear()
-  const m = String(fecha.getMonth() + 1).padStart(2, '0')
-  const d = String(fecha.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 function hoyInicio(): Date {
   const d = new Date()
@@ -53,28 +47,22 @@ function mesAnterior(): { desde: Date; hasta: Date } {
   return { desde: d, hasta }
 }
 
-const DEFAULT_DESDE = toInputDate(diasAtras(6))
-const DEFAULT_HASTA = toInputDate(hoyInicio())
-
-const DEFAULT_DESDE_B = toInputDate(mesAnterior().desde)
-const DEFAULT_HASTA_B = toInputDate(mesAnterior().hasta)
-
 type Tab = 'periodo' | 'comparar'
 
 export function ReportesPage() {
   const [tab, setTab] = useState<Tab>('periodo')
 
   // Período único
-  const [desde, setDesde] = useState(DEFAULT_DESDE)
-  const [hasta, setHasta] = useState(DEFAULT_HASTA)
+  const [desde, setDesde] = useState(() => toInputDate(diasAtras(6)))
+  const [hasta, setHasta] = useState(() => toInputDate(hoyInicio()))
   const [atajoActivo, setAtajoActivo] = useState<string | null>('7d')
 
   // Comparación
-  const [desdeA, setDesdeA] = useState(DEFAULT_DESDE)
-  const [hastaA, setHastaA] = useState(DEFAULT_HASTA)
+  const [desdeA, setDesdeA] = useState(() => toInputDate(diasAtras(6)))
+  const [hastaA, setHastaA] = useState(() => toInputDate(hoyInicio()))
   const [atajoA, setAtajoA] = useState<string | null>('7d')
-  const [desdeB, setDesdeB] = useState(DEFAULT_DESDE_B)
-  const [hastaB, setHastaB] = useState(DEFAULT_HASTA_B)
+  const [desdeB, setDesdeB] = useState(() => toInputDate(mesAnterior().desde))
+  const [hastaB, setHastaB] = useState(() => toInputDate(mesAnterior().hasta))
   const [atajoB, setAtajoB] = useState<string | null>('anterior')
 
   // Datos

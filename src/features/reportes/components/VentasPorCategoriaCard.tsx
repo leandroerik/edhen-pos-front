@@ -1,18 +1,8 @@
 import type { Producto } from '../../../types/producto'
 import type { Venta } from '../../../types/venta'
+import { formatPrecio, formatPorcentaje } from '../../../shared/format'
 import { agruparPorCategoria } from '../lib/agregaciones'
 import { exportarCsv } from '../lib/exportarCsv'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
-const formatPorcentaje = new Intl.NumberFormat('es-AR', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-})
 
 interface VentasPorCategoriaCardProps {
   ventas: Venta[]

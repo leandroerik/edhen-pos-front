@@ -1,15 +1,10 @@
+import { toInputDate } from '../../../shared/format'
+
 interface SelectorRangoFechasProps {
   desde: string
   hasta: string
   atajoActivo: string | null
   onChange: (desde: string, hasta: string, atajo: string | null) => void
-}
-
-function toInputDate(fecha: Date): string {
-  const y = fecha.getFullYear()
-  const m = String(fecha.getMonth() + 1).padStart(2, '0')
-  const d = String(fecha.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 function inicioDelDia(fecha: Date): Date {
@@ -43,23 +38,16 @@ function mesAnterior(): { desde: Date; hasta: Date } {
   return { desde: d, hasta }
 }
 
-const ATAJOS: { clave: string; label: string; desde: Date; hasta: Date }[] = [
-  { clave: 'hoy', label: 'Hoy', desde: hoy(), hasta: hoy() },
-  { clave: '7d', label: '7 días', desde: diasAtras(6), hasta: hoy() },
-  { clave: '30d', label: '30 días', desde: diasAtras(29), hasta: hoy() },
-  {
-    clave: 'mes',
-    label: 'Este mes',
-    desde: inicioDelMes(),
-    hasta: hoy(),
-  },
-  {
-    clave: 'anterior',
-    label: 'Mes anterior',
-    desde: mesAnterior().desde,
-    hasta: mesAnterior().hasta,
-  },
-]
+function construirAtajos(): { clave: string; label: string; desde: Date; hasta: Date }[] {
+  const ahora = hoy()
+  return [
+    { clave: 'hoy', label: 'Hoy', desde: ahora, hasta: ahora },
+    { clave: '7d', label: '7 días', desde: diasAtras(6), hasta: ahora },
+    { clave: '30d', label: '30 días', desde: diasAtras(29), hasta: ahora },
+    { clave: 'mes', label: 'Este mes', desde: inicioDelMes(), hasta: ahora },
+    { clave: 'anterior', label: 'Mes anterior', ...mesAnterior() },
+  ]
+}
 
 export function SelectorRangoFechas({
   desde,
@@ -67,7 +55,9 @@ export function SelectorRangoFechas({
   atajoActivo,
   onChange,
 }: SelectorRangoFechasProps) {
-  function seleccionarAtajo(atajo: (typeof ATAJOS)[number]) {
+  const atajos = construirAtajos()
+
+  function seleccionarAtajo(atajo: (typeof atajos)[number]) {
     onChange(toInputDate(atajo.desde), toInputDate(atajo.hasta), atajo.clave)
   }
 
@@ -79,7 +69,7 @@ export function SelectorRangoFechas({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {ATAJOS.map((atajo) => (
+      {atajos.map((atajo) => (
         <button
           key={atajo.clave}
           onClick={() => seleccionarAtajo(atajo)}

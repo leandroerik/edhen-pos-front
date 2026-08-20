@@ -1,17 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { crearColor, crearTalla } from '../../api/catalogos.api'
+import { crearColor, crearTalla, type TallaInput } from '../../api/catalogos.api'
 import {
-  crearProducto,
-  crearVariante,
+  crearProductoConVariantes,
   editarProducto,
   editarVariante,
   obtenerProducto,
   type ProductoInput,
 } from '../../api/productos.api'
+import { ConfirmModal } from '../../shared/components/ConfirmModal'
 import { VariantesEditor } from './components/VariantesEditor'
 import { CategoriasModal } from './components/CategoriasModal'
-import { useCatalogos } from './hooks/useCatalogos'
+import { useCatalogos } from '../../shared/hooks/useCatalogos'
 import type { VarianteDraft } from './lib/varianteDraft'
 
 export function ProductoFormPage() {
@@ -34,6 +34,8 @@ export function ProductoFormPage() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modalCategoriasAbierto, setModalCategoriasAbierto] = useState(false)
+  const [modalSalirAbierto, setModalSalirAbierto] = useState(false)
+  const [ dirty, setDirty ] = useState(false)
 
   useEffect(() => {
     if (!esEdicion) return
@@ -50,12 +52,12 @@ export function ProductoFormPage() {
         producto.variantes.map((v) => ({
           localId: crypto.randomUUID(),
           id: v.id,
-          colorId: v.color.id,
+          colorId: v.color?.id ?? 'otro',
           colorNombreNuevo: '',
           colorHexNuevo: '#000000',
-          tallaId: v.talla.id,
+          tallaId: v.talla?.id ?? 'otro',
           tallaNombreNueva: '',
-          tallaTipoNueva: 'ROPA_SUPERIOR',
+          tallaTipoNueva: 'ROPA',
           codigoBarras: v.codigoBarras ?? '',
           precio: v.precio !== undefined ? String(v.precio) : '',
           stock: String(v.stock),
@@ -71,17 +73,26 @@ export function ProductoFormPage() {
     }
   }, [esEdicion, id])
 
+  useEffect(() => {
+    if (!dirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
+
+  const markDirty = () => { if (!dirty) setDirty(true) }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 
-    const categoriaSeleccionada = categorias.find(
-      (c) => c.id === (categoriaId ?? categorias[0]?.id),
-    )
-    if (!categoriaSeleccionada) return
+    const catId = categoriaId ?? categorias[0]?.id
+    if (!catId) return
 
     const productoInput: ProductoInput = {
-      categoria: categoriaSeleccionada,
+      categoriaId: catId,
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
       precioBase: Number(precioBase),
@@ -95,52 +106,130 @@ export function ProductoFormPage() {
 
     setGuardando(true)
     try {
-      let productoId: number
       if (esEdicion) {
-        productoId = Number(id)
-        await editarProducto(productoId, productoInput)
+        await editarProducto(Number(id), productoInput)
+
+        const coloresNuevos = new Map<string, { nombre: string; codigoHex: string }>()
+        const tallasNuevas = new Map<string, TallaInput>()
+        for (const draft of variantes) {
+          if (draft.id === undefined) continue
+          if (draft.colorId === 'otro' && draft.colorNombreNuevo.trim()) {
+            coloresNuevos.set(draft.colorNombreNuevo.trim(), {
+              nombre: draft.colorNombreNuevo.trim(),
+              codigoHex: draft.colorHexNuevo,
+            })
+          }
+          if (draft.tallaId === 'otro' && draft.tallaNombreNueva.trim()) {
+            tallasNuevas.set(draft.tallaNombreNueva.trim(), {
+              nombre: draft.tallaNombreNueva.trim(),
+              tipo: draft.tallaTipoNueva,
+            })
+          }
+        }
+
+        const coloresCreados = new Map<string, { id: number }>()
+        const tallasCreadas = new Map<string, { id: number }>()
+        await Promise.all([
+          ...[...coloresNuevos.values()].map(async (c) => {
+            const creado = await crearColor(c)
+            coloresCreados.set(c.nombre, creado)
+          }),
+          ...[...tallasNuevas.values()].map(async (t) => {
+            const creado = await crearTalla(t)
+            tallasCreadas.set(t.nombre, creado)
+          }),
+        ])
+
+        const variantesAEditar: Promise<unknown>[] = []
+        for (const draft of variantes) {
+          if (draft.id === undefined) continue
+          const color =
+            draft.colorId === 'otro'
+              ? coloresCreados.get(draft.colorNombreNuevo.trim())
+              : colores.find((c) => c.id === draft.colorId)
+          const talla =
+            draft.tallaId === 'otro'
+              ? tallasCreadas.get(draft.tallaNombreNueva.trim())
+              : tallas.find((t) => t.id === draft.tallaId)
+          if (!color || !talla) continue
+          variantesAEditar.push(
+            editarVariante(draft.id, {
+              colorId: color.id,
+              tallaId: talla.id,
+              codigoBarras: draft.codigoBarras.trim() || undefined,
+              precio: draft.precio ? Number(draft.precio) : Number(precioBase) || 1,
+              stockMinimo: Number(draft.stockMinimo) || 0,
+              activo: draft.activo,
+            }),
+          )
+        }
+        await Promise.all(variantesAEditar)
       } else {
-        productoId = (await crearProducto(productoInput)).id
-      }
+        const coloresNuevos = new Map<string, { nombre: string; codigoHex: string }>()
+        const tallasNuevas = new Map<string, TallaInput>()
+        for (const draft of variantes) {
+          if (draft.colorId === 'otro' && draft.colorNombreNuevo.trim()) {
+            coloresNuevos.set(draft.colorNombreNuevo.trim(), {
+              nombre: draft.colorNombreNuevo.trim(),
+              codigoHex: draft.colorHexNuevo,
+            })
+          }
+          if (draft.tallaId === 'otro' && draft.tallaNombreNueva.trim()) {
+            tallasNuevas.set(draft.tallaNombreNueva.trim(), {
+              nombre: draft.tallaNombreNueva.trim(),
+              tipo: draft.tallaTipoNueva,
+            })
+          }
+        }
 
-      for (const draft of variantes) {
-        const color =
-          draft.colorId === 'otro'
-            ? draft.colorNombreNuevo.trim()
-              ? await crearColor({ nombre: draft.colorNombreNuevo, codigoHex: draft.colorHexNuevo })
-              : undefined
-            : colores.find((c) => c.id === draft.colorId)
+        const coloresCreados = new Map<string, { id: number }>()
+        const tallasCreadas = new Map<string, { id: number }>()
+        await Promise.all([
+          ...[...coloresNuevos.values()].map(async (c) => {
+            const creado = await crearColor(c)
+            coloresCreados.set(c.nombre, creado)
+          }),
+          ...[...tallasNuevas.values()].map(async (t) => {
+            const creado = await crearTalla(t)
+            tallasCreadas.set(t.nombre, creado)
+          }),
+        ])
 
-        const talla =
-          draft.tallaId === 'otro'
-            ? draft.tallaNombreNueva.trim()
-              ? await crearTalla({ nombre: draft.tallaNombreNueva, tipo: draft.tallaTipoNueva })
-              : undefined
-            : tallas.find((t) => t.id === draft.tallaId)
+        const variantesInput: Array<{
+          colorId?: number
+          tallaId?: number
+          precio: number
+          stock: number
+          stockMinimo: number
+        }> = []
 
-        if (!color || !talla) continue
+        for (const draft of variantes) {
+          const color =
+            draft.colorId === 'otro'
+              ? coloresCreados.get(draft.colorNombreNuevo.trim())
+              : colores.find((c) => c.id === draft.colorId)
+          const talla =
+            draft.tallaId === 'otro'
+              ? tallasCreadas.get(draft.tallaNombreNueva.trim())
+              : tallas.find((t) => t.id === draft.tallaId)
+          if (!color || !talla) continue
 
-        if (draft.id === undefined) {
-          await crearVariante(productoId, {
-            color,
-            talla,
-            codigoBarras: draft.codigoBarras.trim() || undefined,
-            precio: draft.precio ? Number(draft.precio) : undefined,
+          variantesInput.push({
+            colorId: color.id,
+            tallaId: talla.id,
+            precio: draft.precio ? Number(draft.precio) : Number(precioBase) || 1,
             stock: Number(draft.stock) || 0,
             stockMinimo: Number(draft.stockMinimo) || 0,
           })
-        } else {
-          await editarVariante(draft.id, {
-            color,
-            talla,
-            codigoBarras: draft.codigoBarras.trim() || undefined,
-            precio: draft.precio ? Number(draft.precio) : undefined,
-            stockMinimo: Number(draft.stockMinimo) || 0,
-            activo: draft.activo,
-          })
         }
+
+        await crearProductoConVariantes({
+          ...productoInput,
+          variantes: variantesInput,
+        })
       }
 
+      setDirty(false)
       navigate('/productos')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el producto')
@@ -176,7 +265,7 @@ export function ProductoFormPage() {
             <input
               type="text"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => { setNombre(e.target.value); markDirty() }}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
               required
             />
@@ -188,14 +277,14 @@ export function ProductoFormPage() {
               <button
                 type="button"
                 onClick={() => setModalCategoriasAbierto(true)}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                className="text-xs font-medium text-gray-700 hover:text-gray-900"
               >
                 + Gestionar categorías
               </button>
             </div>
             <select
               value={categoriaId ?? categorias[0]?.id ?? ''}
-              onChange={(e) => setCategoriaId(Number(e.target.value))}
+              onChange={(e) => { setCategoriaId(Number(e.target.value)); markDirty() }}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             >
               {categorias.map((c) => (
@@ -210,7 +299,7 @@ export function ProductoFormPage() {
             Descripción
             <textarea
               value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
+              onChange={(e) => { setDescripcion(e.target.value); markDirty() }}
               rows={2}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             />
@@ -222,7 +311,7 @@ export function ProductoFormPage() {
               type="number"
               min="0"
               value={precioBase}
-              onChange={(e) => setPrecioBase(e.target.value)}
+              onChange={(e) => { setPrecioBase(e.target.value); markDirty() }}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
               required
             />
@@ -233,7 +322,7 @@ export function ProductoFormPage() {
             <input
               type="text"
               value={imagenUrl}
-              onChange={(e) => setImagenUrl(e.target.value)}
+              onChange={(e) => { setImagenUrl(e.target.value); markDirty() }}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             />
           </label>
@@ -242,10 +331,10 @@ export function ProductoFormPage() {
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <VariantesEditor
             variantes={variantes}
-            onChange={setVariantes}
-            nombreProducto={nombre}
+            onChange={(v) => { setVariantes(v); markDirty() }}
             colores={colores}
             tallas={tallas}
+            precioBase={Number(precioBase) || 0}
             onCatalogoActualizado={recargarCatalogos}
           />
         </div>
@@ -260,7 +349,10 @@ export function ProductoFormPage() {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/productos')}
+            onClick={() => {
+              if (dirty) { setModalSalirAbierto(true); return }
+              navigate('/productos')
+            }}
             className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Cancelar
@@ -272,6 +364,16 @@ export function ProductoFormPage() {
         abierto={modalCategoriasAbierto}
         onCerrar={() => setModalCategoriasAbierto(false)}
         onActualizado={recargarCatalogos}
+      />
+
+      <ConfirmModal
+        abierto={modalSalirAbierto}
+        titulo="Hay cambios sin guardar"
+        mensaje="¿Seguro que querés salir? Los cambios que hiciste se van a perder."
+        textoAccion="Salir sin guardar"
+        variant="warning"
+        onConfirmar={() => { setModalSalirAbierto(false); navigate('/productos') }}
+        onCancelar={() => setModalSalirAbierto(false)}
       />
     </div>
   )

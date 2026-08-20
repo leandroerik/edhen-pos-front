@@ -26,7 +26,7 @@ export function crearVarianteDraftVacia(colores: Color[], tallas: Talla[]): Vari
     colorHexNuevo: '#000000',
     tallaId: tallas[0]?.id ?? 'otro',
     tallaNombreNueva: '',
-    tallaTipoNueva: 'ROPA_SUPERIOR',
+    tallaTipoNueva: 'ROPA',
     codigoBarras: '',
     precio: '',
     stock: '0',

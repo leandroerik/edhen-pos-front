@@ -5,11 +5,9 @@ Este documento explica cómo funciona hoy el alta/edición de un producto en
 tomaron y por qué. Complementa al Documento 2 (modelo de datos) y al
 Documento 3 (contrato de API) — acá se explica el *proceso*, no el esquema.
 
-> Estado actual: todo esto corre contra mocks en memoria
-> (`src/api/productos.api.ts`, `src/api/catalogos.api.ts`) que replican
-> exactamente la firma de la futura API REST descripta en el Documento 3.
-> Cuando el backend exista, solo cambia el cuerpo de esas funciones (pasan a
-> llamar a `apiClient`) — ni los componentes ni el resto del flujo se tocan.
+> Estado actual: la app consume la API REST real del backend
+> (`src/api/productos.api.ts`, `src/api/catalogos.api.ts`). Los
+> componentes y flujos están descritos a continuación.
 
 ## 1. Flujo paso a paso
 
@@ -97,9 +95,9 @@ El flujo:
    `useCatalogos().recargar()`, así el nuevo color/talla ya aparece como
    chip elegible para el resto de los talles sin recargar la página.
 
-**Colores acotados a los primeros 3** (`COLORES_VISIBLES_INICIAL`,
+**Colores acotados a los primeros 5** (`COLORES_VISIBLES_INICIAL`,
 `GeneradorVariantes.tsx`) por talle, para no llenar la pantalla cuando
-el catálogo de colores es largo — como vienen ordenados por uso, esos 3
+el catálogo de colores es largo — como vienen ordenados por uso, esos 5
 son los que más se repiten en la tienda, no los primeros que se dieron
 de alta. Un color ya cargado para ese talle se sigue mostrando aunque no
 esté entre los 3 (el "✓" nunca queda escondido). El resto del catálogo
@@ -130,20 +128,14 @@ orden se recalcula en cada render (`Array.prototype.sort`, estable), así
 que dentro de un mismo talle las filas quedan en el orden en que se
 cargaron.
 
-**Auto-scroll a la fila nueva** (no al final de la tabla): como el
-orden ya no es "última fila = más reciente", el auto-scroll apunta
-puntualmente a la fila recién creada por su `localId`
-(`filaRefs`/`localIdsNuevosRef` en `VariantesEditor.tsx`), la centra en
-pantalla, y listo — se dispara al agregar una variante (a mano, desde
-el generador, o copiando el talle anterior), nunca al editar un campo
-de una fila existente.
+** Orden de columnas**: Variante primero (talle · color), después Precio,
+Stock, Mín., y acciones. En variantes existentes, precio y stock mínimo
+son editables inline.
 
-## 3. SKU: 100% automático, no editable
+## 3. SKU: automático
 
-**Cambio de criterio** (mismo espíritu que el código de barras, sección
-4): el SKU dejó de ser un campo que se tipea o se corrige a mano. Se
-calcula siempre (`src/features/productos/lib/sku.ts`, `sugerirSku`) a
-partir de nombre del producto + color + talla:
+El SKU se calcula siempre (`src/features/productos/lib/sku.ts`,
+`sugerirSku`) a partir de nombre del producto + color + talla:
 
 ```
 sugerirSku("Remera básica algodón", "Negro", "S") → "REM-BAS-NEG-S"
@@ -357,29 +349,33 @@ recarga mientras se arma la tanda.
   así no le pisa el tamaño de página al ticket ni a una etiqueta suelta
   cuando se navega a otra pantalla.
 
-## 6. Stock: no se edita libre (recordatorio)
+## 6. Stock y precio: edición inline en variantes existentes
 
-Ya documentado en el Documento 2 y aplicado en el formulario: el `stock`
-de una variante existente se muestra de solo lectura ("se ajusta desde
-Stock"). Solo se carga un valor inicial al dar de alta una variante nueva
-(equivale a un ingreso inicial de inventario). Cualquier ajuste posterior
-va a pasar por el módulo de Stock (`POST /api/stock/ajuste`, con motivo
-obligatorio), todavía no construido.
+El `stock` de una variante existente ya no es de solo lectura en el
+formulario — ahora se puede ajustar directamente en la tabla de
+variantes. El `stockMinimo` también es editable inline.
 
-**El campo arranca en `0` y se vacía solo al primer foco** — al hacer
-clic o entrar con `Tab` al input de stock de una variante nueva, si
-todavía dice `0` (el valor por defecto, no algo que se haya tipeado) se
-borra para poder escribir directo la cantidad real, sin tener que
-seleccionar y borrar el `0` a mano primero. Solo pasa esa primera vez:
-si se vuelve a enfocar el campo después de haber cargado algo, no se
-vuelve a vaciar.
+- **Stock**: se muestra como número (no input) en variantes existentes.
+  Para ajustar stock de una variante existente, se usa el módulo de
+  Stock (`POST /api/stock/ajuste`, con motivo obligatorio), que mantiene
+  la trazabilidad completa.
+- **Stock mínimo**: ahora es un input inline en la tabla de variantes
+  existentes. Se puede ajustar sin ir al form completo.
+- **Precio**: ahora es clickable en variantes existentes — tocar el precio
+  abre un input inline para poner un precio custom. Si se deja vacío, usa
+  el precio base del producto.
+
+**El campo stock de variantes nuevas arranca en `0` y se vacía solo al
+primer foco** — al hacer clic o entrar con `Tab` al input de stock de
+una variante nueva, si todavía dice `0` (el valor por defecto, no algo
+que se haya tipeado) se borra para poder escribir directo la cantidad
+real, sin tener que seleccionar y borrar el `0` a mano primero. Solo
+pasa esa primera vez: si se vuelve a enfocar el campo después de haber
+cargado algo, no se vuelve a vaciar.
 
 **Stock mínimo sugerido = 10% del stock inicial.** Mientras no se edite
 el campo a mano, el mínimo sigue en vivo al 10% de lo que se carga en
 Stock (redondeado para arriba, piso de 1 si hay algo de stock —
-`conStockMinimoSugerido` en `VariantesEditor.tsx`). Se distingue
-visualmente (gris mientras es sugerido,
-oscuro una vez editado a mano) y tiene el mismo botón ↺ para volver al
-modo automático. Solo aplica a variantes nuevas — para una variante ya
-existente el stock no es editable desde este formulario, así que no
-hay de qué recalcular el mínimo.
+`conStockMinimoSugerido` en `VariantesEditor.tsx`). Solo aplica a
+variantes nuevas — para variantes existentes el stock mínimo se edita
+directamente.

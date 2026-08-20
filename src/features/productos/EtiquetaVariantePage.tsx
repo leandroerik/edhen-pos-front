@@ -64,6 +64,11 @@ export function EtiquetaVariantePage() {
           className="w-64 rounded-lg border border-gray-200 bg-white p-4 text-center print:w-auto print:border-0 print:p-0 print:shadow-none"
         >
           <p className="text-sm font-semibold text-gray-900">{producto.nombre}</p>
+          {(variante.color || variante.talla) && (
+            <p className="mt-0.5 text-xs text-gray-500">
+              {[variante.color?.nombre, variante.talla?.nombre].filter(Boolean).join(' / ')}
+            </p>
+          )}
           <div className="mt-2 flex justify-center">
             <CodigoBarras valor={variante.codigoBarras ?? ''} />
           </div>

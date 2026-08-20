@@ -2,15 +2,12 @@
 
 Explica cómo funciona hoy el módulo de Ventas en `edhen-pos-front`
 (`src/features/ventas/`), las decisiones tomadas para esta primera versión
-(Sprint 2 del plan de implementación) y qué queda pendiente a propósito
+y qué queda pendiente a propósito
 para cuando existan otros módulos (Clientes, Caja).
 
-> Estado actual: corre contra un mock en memoria
-> (`src/api/ventas.api.ts`), que reutiliza el mismo store de
-> `src/api/productos.api.ts` para descontar stock real. Replica el
-> contrato de `POST/GET /api/ventas`, `POST /api/ventas/{id}/anular` del
-> Documento 3. Cuando el backend exista, cambia el cuerpo de estas
-> funciones, no los componentes.
+> Estado actual: la app consume la API REST real del backend
+> (`src/api/ventas.api.ts`). Los componentes y flujos están descritos a
+> continuación.
 
 ## 1. Flujo de una venta
 

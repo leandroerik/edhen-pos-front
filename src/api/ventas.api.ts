@@ -24,20 +24,17 @@ export interface CrearVentaInput {
 }
 
 export async function crearVenta(input: CrearVentaInput): Promise<Venta> {
-  const payload = {
-    clienteId: input.cliente?.id,
-    tipoCompra: 'LOCAL_FISICO',
-    descuentoTotal: input.descuentoTotal ?? 0,
-    items: input.items,
-    pagos: input.pagos,
-    observaciones: input.observaciones,
-  }
-  const res = await apiClient.post<Venta>('/api/ventas', payload)
+  const res = await apiClient.post<Venta>('/api/ventas', construirPayload(input))
   return res.data
 }
 
 export async function crearPedido(input: CrearVentaInput): Promise<Venta> {
-  const payload = {
+  const res = await apiClient.post<Venta>('/api/ventas/pedido', construirPayload(input))
+  return res.data
+}
+
+function construirPayload(input: CrearVentaInput) {
+  return {
     clienteId: input.cliente?.id,
     tipoCompra: 'LOCAL_FISICO',
     descuentoTotal: input.descuentoTotal ?? 0,
@@ -45,23 +42,43 @@ export async function crearPedido(input: CrearVentaInput): Promise<Venta> {
     pagos: input.pagos,
     observaciones: input.observaciones,
   }
-  const res = await apiClient.post<Venta>('/api/ventas/pedido', payload)
-  return res.data
 }
 
 export interface VentasFiltro {
   desde?: string
   hasta?: string
   estado?: EstadoVenta
+  page?: number
+  size?: number
 }
 
-export async function listarVentas(filtro: VentasFiltro = {}): Promise<Venta[]> {
+export interface PaginatedVentas {
+  items: Venta[]
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+}
+
+export async function listarVentas(filtro: Omit<VentasFiltro, 'page' | 'size'> = {}): Promise<Venta[]> {
   const params = new URLSearchParams()
   if (filtro.estado) params.append('estado', filtro.estado)
   if (filtro.desde) params.append('desde', filtro.desde)
   if (filtro.hasta) params.append('hasta', filtro.hasta)
 
   const res = await apiClient.get<Venta[]>('/api/ventas', { params })
+  return res.data
+}
+
+export async function listarVentasPaginadas(filtro: VentasFiltro): Promise<PaginatedVentas> {
+  const params = new URLSearchParams()
+  if (filtro.estado) params.append('estado', filtro.estado)
+  if (filtro.desde) params.append('desde', filtro.desde)
+  if (filtro.hasta) params.append('hasta', filtro.hasta)
+  if (filtro.page !== undefined) params.append('page', String(filtro.page))
+  if (filtro.size !== undefined) params.append('size', String(filtro.size))
+
+  const res = await apiClient.get<PaginatedVentas>('/api/ventas', { params })
   return res.data
 }
 
@@ -91,6 +108,16 @@ export async function cancelarPedido(id: number): Promise<void> {
   await apiClient.post(`/api/ventas/${id}/cancelar`)
 }
 
+export async function pedidosSinEnvio(): Promise<Venta[]> {
+  const res = await apiClient.get<Venta[]>('/api/ventas/pendientes-sin-envio')
+  return res.data
+}
+
 export async function anularVenta(id: number): Promise<void> {
   await apiClient.post(`/api/ventas/${id}/anular`)
+}
+
+export async function descargarComprobante(id: number): Promise<Blob> {
+  const res = await apiClient.get(`/api/ventas/${id}/comprobante`, { responseType: 'blob' })
+  return res.data
 }

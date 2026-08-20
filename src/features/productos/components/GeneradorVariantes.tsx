@@ -3,13 +3,13 @@ import { crearColor, crearTalla } from '../../../api/catalogos.api'
 import type { Color } from '../../../types/color'
 import type { Talla, TallaTipo } from '../../../types/talla'
 
-const TIPOS_TALLA: TallaTipo[] = ['ROPA_SUPERIOR', 'ROPA_INFERIOR', 'CALZADO', 'UNICO']
+const TIPOS_TALLA: TallaTipo[] = ['ROPA', 'CALZADO']
 // Cuántos chips de color se ven por talle antes de pasar al desplegable
 // "Otros colores…" — pedido explícito para no llenar la pantalla cuando
 // el catálogo de colores es largo. Como `colores` ya viene ordenado por
 // uso (useCatalogos), estos primeros 3 son los que más se repiten en la
 // tienda, no los primeros que se dieron de alta.
-const COLORES_VISIBLES_INICIAL = 3
+const COLORES_VISIBLES_INICIAL = 5
 
 interface GeneradorVariantesProps {
   colores: Color[]
@@ -79,7 +79,7 @@ export function GeneradorVariantes({
   const [menuColorAbierto, setMenuColorAbierto] = useState<number | null>(null)
   const [tallaNuevaAbierta, setTallaNuevaAbierta] = useState(false)
   const [nombreTallaNueva, setNombreTallaNueva] = useState('')
-  const [tipoTallaNueva, setTipoTallaNueva] = useState<TallaTipo>('ROPA_SUPERIOR')
+  const [tipoTallaNueva, setTipoTallaNueva] = useState<TallaTipo>('ROPA')
   const [colorNuevoEnTalla, setColorNuevoEnTalla] = useState<number | null>(null)
   const [nombreColorNuevo, setNombreColorNuevo] = useState('')
   const [hexColorNuevo, setHexColorNuevo] = useState('#000000')
@@ -163,79 +163,93 @@ export function GeneradorVariantes({
         Tocá un talle para elegir sus colores — cada color que toques se agrega al momento.
       </p>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {tallas.map((talla) => (
-          <Chip
-            key={talla.id}
-            activo={tallesExpandidos.includes(talla.id)}
-            onClick={() => toggleTalla(talla.id)}
-          >
-            {talla.nombre}
-          </Chip>
-        ))}
-
-        {!tallaNuevaAbierta ? (
-          <button
-            type="button"
-            onClick={() => setTallaNuevaAbierta(true)}
-            className="text-xs font-medium text-gray-500 hover:text-gray-900"
-          >
-            + Otra talla…
-          </button>
-        ) : (
-          <span className="flex items-center gap-1">
-            <input
-              type="text"
-              value={nombreTallaNueva}
-              onChange={(e) => setNombreTallaNueva(e.target.value)}
-              placeholder="Nombre"
-              className="w-24 rounded-md border border-gray-300 px-2 py-1 text-xs"
-              autoFocus
-            />
-            <select
-              value={tipoTallaNueva}
-              onChange={(e) => setTipoTallaNueva(e.target.value as TallaTipo)}
-              className="rounded-md border border-gray-300 px-1 py-1 text-xs"
-            >
-              {TIPOS_TALLA.map((tipo) => (
-                <option key={tipo} value={tipo}>
-                  {tipo}
-                </option>
+      <div className="mt-2 space-y-1.5">
+        {(
+          [
+            ['ROPA', 'Ropa'],
+            ['CALZADO', 'Calzado'],
+          ] as const
+        ).map(([tipo, label]) => {
+          const grupo = tallas.filter((t) => t.tipo === tipo)
+          if (grupo.length === 0) return null
+          return (
+            <div key={tipo} className="flex flex-wrap items-center gap-1.5">
+              <span className="w-20 shrink-0 text-[10px] font-medium text-gray-400">{label}</span>
+              {grupo.map((talla) => (
+                <Chip
+                  key={talla.id}
+                  activo={tallesExpandidos.includes(talla.id)}
+                  onClick={() => toggleTalla(talla.id)}
+                >
+                  {talla.nombre}
+                </Chip>
               ))}
-            </select>
+            </div>
+          )
+        })}
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="w-20 shrink-0" />
+          {!tallaNuevaAbierta ? (
             <button
               type="button"
-              onClick={confirmarTallaNueva}
-              disabled={!nombreTallaNueva.trim()}
-              title="Agregar talla"
-              className="text-xs font-medium text-gray-700 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => setTallaNuevaAbierta(true)}
+              className="text-xs font-medium text-gray-500 hover:text-gray-900"
             >
-              ✓
+              + Otra talla…
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTallaNuevaAbierta(false)
-                setNombreTallaNueva('')
-              }}
-              title="Cancelar"
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </span>
-        )}
+          ) : (
+            <span className="flex items-center gap-1">
+              <input
+                type="text"
+                value={nombreTallaNueva}
+                onChange={(e) => setNombreTallaNueva(e.target.value)}
+                placeholder="Nombre"
+                className="w-24 rounded-md border border-gray-300 px-2 py-1 text-xs"
+                autoFocus
+              />
+              <select
+                value={tipoTallaNueva}
+                onChange={(e) => setTipoTallaNueva(e.target.value as TallaTipo)}
+                className="rounded-md border border-gray-300 px-1 py-1 text-xs"
+              >
+                {TIPOS_TALLA.map((tipo) => (
+                  <option key={tipo} value={tipo}>
+                    {tipo}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={confirmarTallaNueva}
+                disabled={!nombreTallaNueva.trim()}
+                title="Agregar talla"
+                className="text-xs font-medium text-gray-700 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTallaNuevaAbierta(false)
+                  setNombreTallaNueva('')
+                }}
+                title="Cancelar"
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
       </div>
 
       {tallesExpandidos.length > 0 && (
         <div className="mt-3 space-y-2.5 border-t border-gray-200 pt-3">
-          {tallesExpandidosOrdenados.map((talla, idx) => (
+          {tallesExpandidosOrdenados.map((talla) => (
             <div key={talla.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-gray-500">Talle {talla.nombre} — colores</p>
-                {idx > 0 && (
-                  <></>
-                )}
               </div>
               {(() => {
                 const coloresVisibles = coloresVisiblesDe(talla.id)

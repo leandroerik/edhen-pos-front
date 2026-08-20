@@ -1,20 +1,10 @@
 import type { Envio, EstadoEnvio } from '../../../types/envio'
+import { formatPrecio, formatPorcentaje } from '../../../shared/format'
 import {
   agruparEnviosPorEstado,
   agruparEnviosPorTransportista,
 } from '../lib/agregaciones'
 import { exportarCsv } from '../lib/exportarCsv'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
-const formatPorcentaje = new Intl.NumberFormat('es-AR', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-})
 
 const NOMBRE_ESTADO: Record<EstadoEnvio, string> = {
   PENDIENTE: 'Pendiente',

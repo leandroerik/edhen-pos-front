@@ -1,12 +1,5 @@
 import { Link } from 'react-router-dom'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
-const formatPorcentaje = new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 0 })
+import { formatPrecio, formatPorcentaje } from '../../../shared/format'
 
 export interface ProductoVendido {
   productoId: number

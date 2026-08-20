@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { buscarClientesParaVenta, listarDirecciones, obtenerCliente } from '../../api/clientes.api'
+import { buscarClientesParaVenta, editarDireccion, listarDirecciones, obtenerCliente } from '../../api/clientes.api'
 import { crearEnvio, crearTransportista, listarTransportistas } from '../../api/envios.api'
-import { buscarVentasParaEnvio, listarVentas } from '../../api/ventas.api'
+import { buscarVentasParaEnvio, pedidosSinEnvio } from '../../api/ventas.api'
+import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { formatPrecio } from '../../shared/format'
+import { useDebounce } from '../../shared/hooks/useDebounce'
 import type { Cliente } from '../../types/cliente'
 import type { Direccion } from '../../types/direccion'
 import type { EstadoVenta, Venta } from '../../types/venta'
@@ -14,12 +17,6 @@ const NOMBRE_ESTADO_VENTA: Record<EstadoVenta, string> = {
   CANCELADA: 'Cancelada',
 }
 
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
 export function EnvioFormPage() {
   const navigate = useNavigate()
 
@@ -27,12 +24,12 @@ export function EnvioFormPage() {
   const [reloadPendientes, setReloadPendientes] = useState(0)
 
   const [busquedaVenta, setBusquedaVenta] = useState('')
-  const [terminoVentaDebounced, setTerminoVentaDebounced] = useState('')
+  const terminoVentaDebounced = useDebounce(busquedaVenta, 250)
   const [resultadoVentas, setResultadoVentas] = useState<{ clave: string; datos: Venta[] } | null>(null)
   const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(null)
 
   const [busquedaCliente, setBusquedaCliente] = useState('')
-  const [terminoDebounced, setTerminoDebounced] = useState('')
+  const terminoDebounced = useDebounce(busquedaCliente, 250)
   const [resultadoClientes, setResultadoClientes] = useState<{ clave: string; datos: Cliente[] } | null>(
     null,
   )
@@ -51,10 +48,11 @@ export function EnvioFormPage() {
 
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mostrarConfirmarDireccion, setMostrarConfirmarDireccion] = useState(false)
 
   useEffect(() => {
     let cancelado = false
-    listarVentas({ estado: 'PENDIENTE' }).then((datos) => {
+    pedidosSinEnvio().then((datos) => {
       if (cancelado) return
       setPedidosPendientes(datos)
     })
@@ -81,11 +79,6 @@ export function EnvioFormPage() {
   }, [])
 
   useEffect(() => {
-    const timeout = setTimeout(() => setTerminoVentaDebounced(busquedaVenta), 250)
-    return () => clearTimeout(timeout)
-  }, [busquedaVenta])
-
-  useEffect(() => {
     if (!terminoVentaDebounced.trim()) return
     let cancelado = false
     buscarVentasParaEnvio(terminoVentaDebounced).then((datos) => {
@@ -101,11 +94,6 @@ export function EnvioFormPage() {
     terminoVentaDebounced.trim() && resultadoVentas?.clave === terminoVentaDebounced
       ? resultadoVentas.datos
       : []
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setTerminoDebounced(busquedaCliente), 250)
-    return () => clearTimeout(timeout)
-  }, [busquedaCliente])
 
   useEffect(() => {
     if (!terminoDebounced.trim()) return
@@ -176,6 +164,46 @@ export function EnvioFormPage() {
 
   const direccionCambiada = direccionId !== null && direccionOriginalId !== null && direccionId !== direccionOriginalId
 
+  const ejecutarEnvio = async () => {
+    setGuardando(true)
+    try {
+      await crearEnvio({
+        clienteId: clienteSeleccionado!.id,
+        direccionId: direccionId!,
+        ventaId: ventaSeleccionada?.id,
+        transportistaId: esGenerico ? undefined : transportistaId ?? undefined,
+        transportista: esGenerico ? transportistaCustom.trim() || undefined : undefined,
+      })
+      setReloadPendientes((v) => v + 1)
+      navigate('/envios')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo registrar el envío')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const confirmarActualizarDireccion = async () => {
+    const dirActual = direcciones?.find((d) => d.id === direccionId)
+    if (dirActual) {
+      editarDireccion(dirActual.id, {
+        direccion: dirActual.direccion,
+        localidad: dirActual.localidad,
+        provincia: dirActual.provincia,
+        codigoPostal: dirActual.codigoPostal,
+        observaciones: dirActual.observaciones,
+        esPrincipal: true,
+      }).catch(() => {})
+    }
+    setMostrarConfirmarDireccion(false)
+    await ejecutarEnvio()
+  }
+
+  const saltarActualizarDireccion = async () => {
+    setMostrarConfirmarDireccion(false)
+    await ejecutarEnvio()
+  }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
@@ -194,30 +222,11 @@ export function EnvioFormPage() {
     }
 
     if (direccionCambiada) {
-      const confirmar = window.confirm(
-        'La dirección elegida es distinta a la principal del cliente. ¿Querés actualizar la dirección principal del cliente con esta nueva?',
-      )
-      if (confirmar) {
-        // TODO:llamar a updateDireccion para marcar como principal
-      }
+      setMostrarConfirmarDireccion(true)
+      return
     }
 
-    setGuardando(true)
-    try {
-      await crearEnvio({
-        clienteId: clienteSeleccionado.id,
-        direccionId,
-        ventaId: ventaSeleccionada?.id,
-        transportistaId: esGenerico ? undefined : transportistaId ?? undefined,
-        transportista: esGenerico ? transportistaCustom.trim() || undefined : undefined,
-      })
-      setReloadPendientes((v) => v + 1)
-      navigate('/envios')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar el envío')
-    } finally {
-      setGuardando(false)
-    }
+    await ejecutarEnvio()
   }
 
   return (
@@ -544,6 +553,16 @@ export function EnvioFormPage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        abierto={mostrarConfirmarDireccion}
+        titulo="Actualizar dirección principal"
+        mensaje="La dirección elegida es distinta a la principal del cliente. ¿Querés actualizar la dirección principal del cliente con esta nueva?"
+        textoAccion="Actualizar y enviar"
+        variant="warning"
+        onConfirmar={confirmarActualizarDireccion}
+        onCancelar={saltarActualizarDireccion}
+      />
     </div>
   )
 }

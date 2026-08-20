@@ -1,24 +1,9 @@
 import { useState } from 'react'
+import { NOMBRE_MEDIO_PAGO } from '../../../shared/constants'
+import { formatPrecio, formatPorcentaje } from '../../../shared/format'
 import type { MedioPago } from '../../../types/venta'
 
 const CLAVE_OCULTAR = 'edhen-pos:ocultarFacturado'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
-const formatPorcentaje = new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 0 })
-
-const NOMBRE_MEDIO_PAGO: Record<MedioPago, string> = {
-  EFECTIVO: 'Efectivo',
-  TRANSFERENCIA: 'Transferencia',
-  TARJETA_DEBITO: 'Tarjeta débito',
-  TARJETA_CREDITO: 'Tarjeta crédito',
-  MERCADO_PAGO: 'Mercado Pago',
-  CUENTA_CORRIENTE: 'Cuenta corriente',
-}
 
 interface PanoramaHoyProps {
   totalHoy: number

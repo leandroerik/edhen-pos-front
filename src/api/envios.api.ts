@@ -1,6 +1,13 @@
 import { apiClient } from './client'
 import type { Envio, EstadoEnvio, Transportista } from '../types/envio'
 
+export interface EnvioEstadoHistorial {
+  id: number
+  estado: EstadoEnvio
+  fecha: string
+  observacion?: string
+}
+
 export interface EnvioInput {
   clienteId: number
   direccionId: number
@@ -54,5 +61,10 @@ export async function listarTransportistas(): Promise<Transportista[]> {
 
 export async function crearTransportista(input: { nombre: string; telefono?: string; email?: string }): Promise<Transportista> {
   const res = await apiClient.post<Transportista>('/api/transportistas', input)
+  return res.data
+}
+
+export async function listarEstadosEnvio(id: number): Promise<EnvioEstadoHistorial[]> {
+  const res = await apiClient.get<EnvioEstadoHistorial[]>(`/api/envios/${id}/estados`)
   return res.data
 }

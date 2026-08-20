@@ -1,11 +1,10 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useRef, useState } from 'react'
 import { GeneradorVariantes } from './GeneradorVariantes'
 import { crearVarianteDraftVacia, type VarianteDraft } from '../lib/varianteDraft'
-import { sugerirSku } from '../lib/sku'
 import type { Color } from '../../../types/color'
 import type { Talla, TallaTipo } from '../../../types/talla'
 
-const TIPOS_TALLA: TallaTipo[] = ['ROPA_SUPERIOR', 'ROPA_INFERIOR', 'CALZADO', 'UNICO']
+const TIPOS_TALLA: TallaTipo[] = ['ROPA', 'CALZADO']
 
 function nombreColorDe(draft: VarianteDraft, colores: Color[]): string {
   if (draft.colorId === 'otro') return draft.colorNombreNuevo
@@ -20,30 +19,23 @@ function nombreTallaDe(draft: VarianteDraft, tallas: Talla[]): string {
 interface VariantesEditorProps {
   variantes: VarianteDraft[]
   onChange: (variantes: VarianteDraft[]) => void
-  nombreProducto: string
   colores: Color[]
   tallas: Talla[]
+  precioBase: number
   onCatalogoActualizado: () => void
 }
 
 export function VariantesEditor({
   variantes,
   onChange,
-  nombreProducto,
   colores,
   tallas,
+  precioBase,
   onCatalogoActualizado,
 }: VariantesEditorProps) {
-  const [precioMasivo, setPrecioMasivo] = useState('')
-  const [stockMinimoMasivo, setStockMinimoMasivo] = useState('')
+  const stockRefs = useRef(new Map<string, HTMLInputElement>())
+  const [editandoPrecio, setEditandoPrecio] = useState<Set<string>>(new Set())
 
-  // La tabla se muestra ordenada por talla (pedido explícito: "mantener
-  // el orden"), no en el orden en que se van generando — así una variante
-  // que se agrega más tarde para un talle chico (ej. sumaste un color a
-  // "S" después de haber cargado "M" y "L") aparece agrupada con el resto
-  // de "S", no al final de la tabla. `sort` es estable, así que dentro de
-  // un mismo talle se conserva el orden en que se cargaron. Una variante
-  // "otro" (talle recién creado, sin id de catálogo todavía) va al final.
   const ordenDeTalla = (tallaId: number | 'otro'): number => {
     if (tallaId === 'otro') return Number.MAX_SAFE_INTEGER
     return tallas.find((t) => t.id === tallaId)?.orden ?? Number.MAX_SAFE_INTEGER
@@ -52,36 +44,21 @@ export function VariantesEditor({
     (a, b) => ordenDeTalla(a.tallaId) - ordenDeTalla(b.tallaId),
   )
 
-  // Cada vez que se suma una variante (a mano o desde el generador), baja
-  // la vista hasta esa fila — pedido explícito, para no tener que
-  // scrollear a mano y perder de vista lo que se acaba de cargar. Como la
-  // tabla queda ordenada por talla y no por orden de carga, la fila nueva
-  // no necesariamente cae al final — por eso se apunta puntualmente a la
-  // fila (por `localId`) en vez de scrollear el contenedor entero hasta
-  // abajo.
-  const filaRefs = useRef(new Map<string, HTMLTableRowElement>())
-  const localIdsNuevosRef = useRef<string[]>([])
-  useEffect(() => {
-    const primerNuevo = localIdsNuevosRef.current[0]
-    localIdsNuevosRef.current = []
-    if (!primerNuevo) return
-    filaRefs.current.get(primerNuevo)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [variantes])
+  const duplicados = (() => {
+    const counts = new Map<string, number>()
+    for (const v of variantes) {
+      if (v.colorId === 'otro' || v.tallaId === 'otro') continue
+      const key = `${v.colorId}:${v.tallaId}`
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return counts
+  })()
 
-  // El SKU ya no se tipea ni se guarda en el draft: se calcula acá mismo
-  // para mostrarlo (nombre + color + talla, igual que sugerirSku), solo
-  // para vista previa — el SKU real que queda guardado lo arma
-  // `productos.api.ts` (`generarSku`) al crear/editar, agregando el id de
-  // la variante como sufijo para que sea único (acá todavía no existe ese
-  // id si la fila es nueva, por eso la vista previa no lo incluye).
-  const skuMostrado = (draft: VarianteDraft): string => {
-    const base = sugerirSku(nombreProducto, nombreColorDe(draft, colores), nombreTallaDe(draft, tallas))
-    return draft.id === undefined ? base : `${base}-${draft.id}`
+  const esDuplicado = (draft: VarianteDraft): boolean => {
+    if (draft.colorId === 'otro' || draft.tallaId === 'otro') return false
+    return (duplicados.get(`${draft.colorId}:${draft.tallaId}`) ?? 0) > 1
   }
 
-  // Mínimo sugerido = 10% del stock inicial cargado (redondeado para arriba,
-  // piso de 1 si hay algo de stock) — mismo criterio de "sugerido hasta que
-  // lo toques" que el SKU: sigue al stock mientras no se edite a mano.
   const conStockMinimoSugerido = (draft: VarianteDraft): VarianteDraft => {
     if (draft.stockMinimoTocado) return draft
     const stock = Number(draft.stock) || 0
@@ -109,94 +86,58 @@ export function VariantesEditor({
 
   const agregar = () => {
     const nueva = crearVarianteDraftVacia(colores, tallas)
-    localIdsNuevosRef.current = [nueva.localId]
     onChange([...variantes, nueva])
   }
 
-  // Crea una fila por cada combinación talle×color que se marcó en el
-  // generador — mismo draft "vacío" que "+ Agregar variante" (stock 0),
-  // solo que con el color/talla ya fijados en vez de quedar en el primero
-  // de la lista.
   const generarVariantes = (combinaciones: Array<{ colorId: number; tallaId: number }>) => {
     const nuevas = combinaciones.map(({ colorId, tallaId }) => ({
       ...crearVarianteDraftVacia(colores, tallas),
       colorId,
       tallaId,
     }))
-    localIdsNuevosRef.current = nuevas.map((n) => n.localId)
     onChange([...variantes, ...nuevas])
   }
 
-  // Pisa el precio de todas las variantes cargadas hoy con un mismo valor.
-  // Es una acción puntual, no queda "pegada": si después editás el precio
-  // de una variante en particular, solo cambia esa — no vuelve a aplicarse
-  // a menos que toques "Aplicar a todas" de nuevo.
-  const aplicarPrecioATodas = () => {
-    onChange(variantes.map((v) => ({ ...v, precio: precioMasivo })))
+  const togglePrecioPersonalizado = (localId: string) => {
+    setEditandoPrecio((actual) => {
+      const next = new Set(actual)
+      if (next.has(localId)) {
+        next.delete(localId)
+        actualizar(localId, { precio: '' })
+      } else {
+        next.add(localId)
+      }
+      return next
+    })
   }
 
-  // Mismo criterio que "Aplicar a todas" de precio: pisa el mínimo de todas
-  // las variantes cargadas con un mismo valor, sin quedar "pegado" — es un
-  // atajo puntual, no una regla que se reaplique sola.
-  const aplicarStockMinimoATodas = () => {
-    onChange(variantes.map((v) => ({ ...v, stockMinimo: stockMinimoMasivo, stockMinimoTocado: true })))
-  }
-
-  // Suma el stock cargado en cada fila (para una variante existente, el
-  // stock actual; no es editable acá, pero cuenta igual para el total).
-  // Pedido explícito: ver en vivo cuántas prendas en total se van
-  // cargando, para cruzar contra lo que efectivamente llegó.
   const totalPrendas = variantes.reduce((acc, v) => acc + (Number(v.stock) || 0), 0)
+
+  const handleStockKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>, localId: string) => {
+      if (e.key !== 'Tab' && e.key !== 'Enter') return
+      const orden = variantesOrdenadas.map((v) => v.localId)
+      const idx = orden.indexOf(localId)
+      if (idx === -1) return
+      const nextIdx = e.key === 'Tab' && e.shiftKey ? idx - 1 : idx + 1
+      if (nextIdx < 0 || nextIdx >= orden.length) return
+      e.preventDefault()
+      stockRefs.current.get(orden[nextIdx])?.focus()
+    },
+    [variantesOrdenadas],
+  )
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-900">Variantes (talle / color)</h2>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min="0"
-              value={precioMasivo}
-              onChange={(e) => setPrecioMasivo(e.target.value)}
-              placeholder="Precio para todas"
-              className="w-28 rounded-md border border-gray-300 px-2 py-1 text-xs"
-            />
-            <button
-              type="button"
-              onClick={aplicarPrecioATodas}
-              disabled={!precioMasivo || variantes.length === 0}
-              className="text-xs font-medium text-gray-700 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Aplicar a todas
-            </button>
-          </div>
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min="0"
-              value={stockMinimoMasivo}
-              onChange={(e) => setStockMinimoMasivo(e.target.value)}
-              placeholder="Mínimo para todas"
-              className="w-28 rounded-md border border-gray-300 px-2 py-1 text-xs"
-            />
-            <button
-              type="button"
-              onClick={aplicarStockMinimoATodas}
-              disabled={!stockMinimoMasivo || variantes.length === 0}
-              className="text-xs font-medium text-gray-700 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Aplicar a todas
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={agregar}
-            className="text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            + Agregar variante
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={agregar}
+          className="text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          + Agregar variante
+        </button>
       </div>
 
       <div className="mt-3">
@@ -213,95 +154,108 @@ export function VariantesEditor({
         <p className="mt-2 text-sm text-gray-500">Todavía no hay variantes cargadas.</p>
       )}
 
+      {variantes.length > 0 && duplicados.size > 0 && (
+        <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          Hay combinaciones color+talla repetidas. Se marcaron en amarillo.
+        </div>
+      )}
+
       {variantes.length > 0 && (
         <div className="mt-3 overflow-x-auto rounded-md border border-gray-200">
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-500">
-                <th className="px-2 py-1.5 font-medium">Talla</th>
-                <th className="px-2 py-1.5 font-medium">Color</th>
-                <th className="px-2 py-1.5 font-medium">SKU</th>
-                <th className="px-2 py-1.5 font-medium">Precio</th>
-                <th className="px-2 py-1.5 font-medium">Stock</th>
-                <th className="px-2 py-1.5 font-medium">Mín.</th>
-                <th className="px-2 py-1.5" />
+                <th className="px-3 py-1.5 font-medium">Variante</th>
+                <th className="px-3 py-1.5 font-medium">Precio</th>
+                <th className="px-3 py-1.5 font-medium">Stock</th>
+                <th className="px-3 py-1.5 font-medium">Mín.</th>
+                <th className="px-3 py-1.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {variantesOrdenadas.map((variante) => {
                 const esNueva = variante.id === undefined
                 const otroAbierto = variante.colorId === 'otro' || variante.tallaId === 'otro'
+                const precioEditable = editandoPrecio.has(variante.localId)
                 return (
                   <Fragment key={variante.localId}>
                     <tr
-                      ref={(el) => {
-                        if (el) filaRefs.current.set(variante.localId, el)
-                        else filaRefs.current.delete(variante.localId)
-                      }}
-                      className="align-top"
+                      className={`align-top ${esDuplicado(variante) ? 'bg-amber-50' : ''}`}
                     >
-                      <td className="px-2 py-1.5">
-                        <select
-                          value={variante.tallaId}
-                          onChange={(e) =>
-                            actualizar(variante.localId, {
-                              tallaId: e.target.value === 'otro' ? 'otro' : Number(e.target.value),
-                            })
-                          }
-                          className="w-20 rounded-md border border-gray-300 px-1.5 py-1 text-xs"
-                        >
-                          {tallas.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.nombre}
-                            </option>
-                          ))}
-                          <option value="otro">+ Otra…</option>
-                        </select>
+                      <td className="px-3 py-1.5">
+                        {esNueva ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-gray-900">
+                              {nombreTallaDe(variante, tallas)}
+                            </span>
+                            <span className="text-gray-400">·</span>
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full border border-gray-300"
+                              style={{
+                                backgroundColor:
+                                  variante.colorId === 'otro'
+                                    ? variante.colorHexNuevo
+                                    : colores.find((c) => c.id === variante.colorId)?.codigoHex,
+                              }}
+                            />
+                            <span className="text-gray-700">
+                              {nombreColorDe(variante, colores)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-gray-900">
+                              {variante.tallaId === 'otro' ? variante.tallaNombreNueva : tallas.find((t) => t.id === variante.tallaId)?.nombre ?? '—'}
+                            </span>
+                            <span className="text-gray-400">·</span>
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full border border-gray-300"
+                              style={{ backgroundColor: variante.colorId === 'otro' ? variante.colorHexNuevo : colores.find((c) => c.id === variante.colorId)?.codigoHex }}
+                            />
+                            <span className="text-gray-700">{nombreColorDe(variante, colores)}</span>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-2 py-1.5">
-                        <select
-                          value={variante.colorId}
-                          onChange={(e) =>
-                            actualizar(variante.localId, {
-                              colorId: e.target.value === 'otro' ? 'otro' : Number(e.target.value),
-                            })
-                          }
-                          className="w-24 rounded-md border border-gray-300 px-1.5 py-1 text-xs"
-                        >
-                          {colores.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.nombre}
-                            </option>
-                          ))}
-                          <option value="otro">+ Otro…</option>
-                        </select>
+                      <td className="px-3 py-1.5 whitespace-nowrap">
+                        {precioEditable ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-400">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={variante.precio}
+                              onChange={(e) => actualizar(variante.localId, { precio: e.target.value })}
+                              placeholder={String(precioBase)}
+                              className="w-20 rounded-md border border-gray-300 px-1.5 py-0.5 text-xs focus:border-gray-500 focus:outline-none"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePrecioPersonalizado(variante.localId)}
+                              className="text-gray-400 hover:text-gray-600"
+                              title="Volver al precio base"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => togglePrecioPersonalizado(variante.localId)}
+                            className={`text-xs ${esNueva ? 'text-gray-400 hover:text-gray-700' : 'text-gray-900 hover:text-gray-700'}`}
+                            title="Personalizar precio"
+                          >
+                            {variante.precio ? `$${variante.precio}` : `$${precioBase}`}
+                          </button>
+                        )}
                       </td>
-                      <td className="min-w-[9rem] px-2 py-1.5 whitespace-nowrap">
-                        <span
-                          className="text-gray-400"
-                          title={
-                            esNueva
-                              ? 'Se genera solo al guardar (nombre + color + talla + un número único)'
-                              : 'Se recalcula solo si cambiás color o talla'
-                          }
-                        >
-                          {skuMostrado(variante)}
-                          {esNueva && '…'}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="number"
-                          min="0"
-                          value={variante.precio}
-                          onChange={(e) => actualizar(variante.localId, { precio: e.target.value })}
-                          placeholder="base"
-                          className="w-20 rounded-md border border-gray-300 px-1.5 py-1 text-xs"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5">
+                      <td className="px-3 py-1.5">
                         {esNueva ? (
                           <input
+                            ref={(el) => {
+                              if (el) stockRefs.current.set(variante.localId, el)
+                              else stockRefs.current.delete(variante.localId)
+                            }}
                             type="number"
                             min="0"
                             value={variante.stock}
@@ -309,46 +263,30 @@ export function VariantesEditor({
                             onFocus={() => {
                               if (variante.stock === '0') actualizar(variante.localId, { stock: '' })
                             }}
-                            className="w-16 rounded-md border border-gray-300 px-1.5 py-1 text-xs"
+                            onKeyDown={(e) => handleStockKeyDown(e, variante.localId)}
+                            placeholder="0"
+                            className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm font-medium focus:border-gray-500 focus:outline-none"
                           />
                         ) : (
-                          <span
-                            className="text-gray-400"
-                            title="El stock se ajusta desde el módulo Stock"
-                          >
-                            {variante.stock}
+                          <span className="text-gray-900">{variante.stock}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 text-gray-500">
+                        {esNueva ? (
+                          <span title={`Mín. sugerido: ${Math.max(1, Math.ceil((Number(variante.stock) || 0) * 0.1))}`}>
+                            {variante.stockMinimo || '—'}
                           </span>
+                        ) : (
+                          <input
+                            type="number"
+                            min="0"
+                            value={variante.stockMinimo}
+                            onChange={(e) => actualizar(variante.localId, { stockMinimo: e.target.value })}
+                            className="w-16 rounded-md border border-gray-300 px-1.5 py-0.5 text-xs focus:border-gray-500 focus:outline-none"
+                          />
                         )}
                       </td>
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="number"
-                          min="0"
-                          value={variante.stockMinimo}
-                          onChange={(e) => actualizar(variante.localId, { stockMinimo: e.target.value })}
-                          title={
-                            esNueva && !variante.stockMinimoTocado
-                              ? 'Sugerido: 10% del stock inicial — se puede editar'
-                              : undefined
-                          }
-                          className={`w-16 rounded-md border border-gray-300 px-1.5 py-1 text-xs ${
-                            esNueva && !variante.stockMinimoTocado ? 'text-gray-400' : 'text-gray-900'
-                          }`}
-                        />
-                        {esNueva && variante.stockMinimoTocado && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              actualizar(variante.localId, { stockMinimo: '', stockMinimoTocado: false })
-                            }
-                            title="Usar el 10% del stock inicial"
-                            className="ml-1 text-gray-400 hover:text-gray-600"
-                          >
-                            ↺
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         {esNueva ? (
                           <button
                             type="button"
@@ -371,7 +309,7 @@ export function VariantesEditor({
 
                     {otroAbierto && (
                       <tr className="bg-gray-50">
-                        <td colSpan={7} className="px-2 py-2">
+                        <td colSpan={5} className="px-3 py-2">
                           <div className="flex flex-wrap items-center gap-2">
                             {variante.colorId === 'otro' && (
                               <>

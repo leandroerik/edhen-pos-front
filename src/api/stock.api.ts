@@ -4,13 +4,17 @@ import type { Producto, ProductoVariante } from '../types/producto'
 
 export interface StockFiltro {
   bajoMinimo?: boolean
+  categoriaId?: number
 }
 
 export async function listarStock(
   filtro: StockFiltro = {},
 ): Promise<Array<{ producto: Producto; variante: ProductoVariante }>> {
+  const params = new URLSearchParams()
+  if (filtro.bajoMinimo) params.append('bajoMinimo', 'true')
+  if (filtro.categoriaId !== undefined) params.append('categoriaId', String(filtro.categoriaId))
   const res = await apiClient.get<Array<{ producto: Producto; variante: ProductoVariante }>>('/api/stock', {
-    params: { bajoMinimo: filtro.bajoMinimo ?? false },
+    params,
   })
   return res.data
 }

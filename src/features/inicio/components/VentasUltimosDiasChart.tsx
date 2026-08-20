@@ -1,10 +1,5 @@
 import { useState } from 'react'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
+import { formatPrecio } from '../../../shared/format'
 
 const formatDiaCorto = new Intl.DateTimeFormat('es-AR', { weekday: 'short' })
 const formatFechaTooltip = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' })

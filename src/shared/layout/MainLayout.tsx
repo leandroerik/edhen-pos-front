@@ -1,8 +1,11 @@
 import { Outlet } from 'react-router-dom'
 import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
+import { useHeartbeat } from '../hooks/useHeartbeat'
 
 export function MainLayout() {
+  useHeartbeat()
+
   return (
     <div className="flex h-screen w-screen print:block print:h-auto">
       <Sidebar />

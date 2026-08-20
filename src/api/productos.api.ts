@@ -1,9 +1,6 @@
 import { apiClient } from './client'
-import type { Categoria } from '../types/categoria'
-import type { Color } from '../types/color'
 import type { MovimientoStock } from '../types/movimientoStock'
 import type { Producto, ProductoVariante } from '../types/producto'
-import type { Talla } from '../types/talla'
 
 export interface ProductosFiltro {
   texto?: string
@@ -12,7 +9,7 @@ export interface ProductosFiltro {
 }
 
 export interface ProductoInput {
-  categoria: Categoria
+  categoriaId: number
   codigoBarras?: string
   nombre: string
   descripcion?: string
@@ -21,19 +18,19 @@ export interface ProductoInput {
 }
 
 export interface VarianteCrearInput {
-  color: Color
-  talla: Talla
+  colorId?: number
+  tallaId?: number
   codigoBarras?: string
-  precio?: number
+  precio: number
   stock: number
   stockMinimo: number
 }
 
 export interface VarianteEditarInput {
-  color: Color
-  talla: Talla
+  colorId?: number
+  tallaId?: number
   codigoBarras?: string
-  precio?: number
+  precio: number
   stockMinimo: number
   activo: boolean
 }
@@ -72,18 +69,21 @@ export async function contarUsoCatalogo(): Promise<{
 }
 
 export async function crearProducto(input: ProductoInput): Promise<Producto> {
-  const res = await apiClient.post<Producto>('/api/productos', {
-    ...input,
-    categoriaId: input.categoria?.id,
-  })
+  const res = await apiClient.post<Producto>('/api/productos', input)
+  return res.data
+}
+
+export interface ProductoConVariantesInput extends ProductoInput {
+  variantes: VarianteCrearInput[]
+}
+
+export async function crearProductoConVariantes(input: ProductoConVariantesInput): Promise<Producto> {
+  const res = await apiClient.post<Producto>('/api/productos/con-variantes', input)
   return res.data
 }
 
 export async function editarProducto(id: number, input: ProductoInput): Promise<Producto> {
-  const res = await apiClient.put<Producto>(`/api/productos/${id}`, {
-    ...input,
-    categoriaId: input.categoria?.id,
-  })
+  const res = await apiClient.put<Producto>(`/api/productos/${id}`, input)
   return res.data
 }
 
@@ -99,11 +99,7 @@ export async function crearVariante(
   productoId: number,
   input: VarianteCrearInput,
 ): Promise<ProductoVariante> {
-  const res = await apiClient.post<ProductoVariante>(`/api/productos/${productoId}/variantes`, {
-    ...input,
-    colorId: input.color?.id,
-    tallaId: input.talla?.id,
-  })
+  const res = await apiClient.post<ProductoVariante>(`/api/productos/${productoId}/variantes`, input)
   return res.data
 }
 
@@ -111,11 +107,7 @@ export async function editarVariante(
   varianteId: number,
   input: VarianteEditarInput,
 ): Promise<ProductoVariante> {
-  const res = await apiClient.put<ProductoVariante>(`/api/variantes/${varianteId}`, {
-    ...input,
-    colorId: input.color?.id,
-    tallaId: input.talla?.id,
-  })
+  const res = await apiClient.put<ProductoVariante>(`/api/variantes/${varianteId}`, input)
   return res.data
 }
 

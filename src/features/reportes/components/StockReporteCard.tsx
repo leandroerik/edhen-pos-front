@@ -1,12 +1,7 @@
 import type { Producto, ProductoVariante } from '../../../types/producto'
+import { formatPrecio } from '../../../shared/format'
 import { agruparStockPorCategoria } from '../lib/agregaciones'
 import { exportarCsv } from '../lib/exportarCsv'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
 
 interface StockReporteCardProps {
   stock: Array<{ producto: Producto; variante: ProductoVariante }>
@@ -50,8 +45,8 @@ export function StockReporteCard({ stock }: StockReporteCardProps) {
       const precio = variante.precio ?? producto.precioBase
       return [
         producto.nombre,
-        variante.color.nombre,
-        variante.talla.nombre,
+        variante.color?.nombre ?? '—',
+        variante.talla?.nombre ?? '—',
         variante.sku,
         variante.stock,
         variante.stockMinimo,
@@ -161,13 +156,13 @@ export function StockReporteCard({ stock }: StockReporteCardProps) {
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full border border-gray-300"
-                  style={{ backgroundColor: variante.color.codigoHex }}
+                  style={{ backgroundColor: variante.color?.codigoHex }}
                 />
                 <span className="truncate text-gray-700">
                   {producto.nombre}
                 </span>
                 <span className="text-gray-400">
-                  {variante.color.nombre}/{variante.talla.nombre}
+                  {variante.color?.nombre}/{variante.talla?.nombre}
                 </span>
                 <span className="ml-auto font-semibold text-gray-900">
                   {variante.stock}
@@ -189,13 +184,13 @@ export function StockReporteCard({ stock }: StockReporteCardProps) {
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full border border-gray-300"
-                  style={{ backgroundColor: variante.color.codigoHex }}
+                  style={{ backgroundColor: variante.color?.codigoHex }}
                 />
                 <span className="truncate text-gray-700">
                   {producto.nombre}
                 </span>
                 <span className="text-gray-400">
-                  {variante.color.nombre}/{variante.talla.nombre}
+                  {variante.color?.nombre}/{variante.talla?.nombre}
                 </span>
                 <span
                   className={`ml-auto font-semibold ${

@@ -1,8 +1,12 @@
-import type { Producto } from '../../../types/producto'
+import type { Producto, ProductoVariante } from '../../../types/producto'
 import { generarCodigoBarrasInterno, generarCodigoBarrasProducto } from '../lib/codigoBarras'
 import { CATEGORIAS, COLORES, TALLAS_INFERIOR, TALLAS_SUPERIOR } from './catalogos.mock'
 
-const productosMockBase: Producto[] = [
+type ProductoMock = Omit<Producto, 'codigoBarras' | 'variantes'> & {
+  variantes: Array<Omit<ProductoVariante, 'codigoBarras' | 'stockDisponible'>>
+}
+
+const productosMockBase: ProductoMock[] = [
   {
     id: 1,
     categoria: CATEGORIAS.remeras,
@@ -133,9 +137,10 @@ const productosMockBase: Producto[] = [
 
 export const productosMock: Producto[] = productosMockBase.map((producto) => ({
   ...producto,
-  codigoBarras: producto.codigoBarras ?? generarCodigoBarrasProducto(producto.id),
+  codigoBarras: generarCodigoBarrasProducto(producto.id),
   variantes: producto.variantes.map((variante) => ({
     ...variante,
-    codigoBarras: variante.codigoBarras ?? generarCodigoBarrasInterno(variante.id),
+    codigoBarras: generarCodigoBarrasInterno(variante.id),
+    stockDisponible: variante.stock - variante.stockReservado,
   })),
 }))

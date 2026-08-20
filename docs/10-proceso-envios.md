@@ -5,12 +5,9 @@ que completa lo que había quedado anotado como pendiente en
 `docs/09-proceso-clientes.md` (dirección cargada, pero sin seguimiento de
 envío en sí).
 
-> Estado actual: mock en memoria (`src/api/envios.api.ts`). El Documento 3
-> todavía no formaliza los endpoints de Envíos — el propio Documento 2 lo
-> deja anotado como pendiente de sumar ("El Documento 3 necesita sumar:
-> endpoints de `/api/envios`..."). El contrato de este mock se diseñó
-> directamente a partir de la entidad `envios` del Documento 2; cuando se
-> formalice el contrato real, se ajusta.
+> Estado actual: la app consume la API REST real del backend
+> (`src/api/envios.api.ts`). Los componentes y flujos están descritos a
+> continuación.
 
 ## 1. Flujo
 

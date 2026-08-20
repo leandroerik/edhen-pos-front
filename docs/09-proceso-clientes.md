@@ -6,7 +6,9 @@ Mayorista/Minorista que se había dejado en Ventas a propósito hasta que
 este módulo existiera (ver `docs/07-proceso-de-venta.md`, sección 2 —
 ahora superada por este documento).
 
-> Estado actual: mock en memoria (`src/api/clientes.api.ts`), replica el
+> Estado actual: la app consume la API REST real del backend
+> (`src/api/clientes.api.ts`). Los componentes y flujos están descritos a
+> continuación.
 > contrato `GET/POST /api/clientes` del Documento 3. ABM completo (alta,
 > edición, baja/reactivación) aunque el contrato original solo esboza
 > GET/POST — mismo criterio que se usó en Productos: se extiende el

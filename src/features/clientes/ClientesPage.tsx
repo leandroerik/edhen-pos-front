@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ConfirmModal } from '../../shared/components/ConfirmModal'
 import { useClientes } from './hooks/useClientes'
 import type { TipoCliente } from '../../types/cliente'
 
@@ -15,6 +16,7 @@ export function ClientesPage() {
   const [texto, setTexto] = useState('')
   const [tipo, setTipo] = useState<TipoCliente | 'todos'>('todos')
   const [estado, setEstado] = useState<FiltroEstado>('activos')
+  const [clienteAEliminar, setClienteAEliminar] = useState<number | null>(null)
 
   const filtro = useMemo(
     () => ({
@@ -138,7 +140,7 @@ export function ClientesPage() {
                       {cliente.activo ? (
                         <button
                           type="button"
-                          onClick={() => darDeBaja(cliente.id)}
+                          onClick={() => setClienteAEliminar(cliente.id)}
                           className="font-medium text-red-600 hover:text-red-800"
                         >
                           Dar de baja
@@ -159,6 +161,21 @@ export function ClientesPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        abierto={clienteAEliminar !== null}
+        titulo="Dar de baja cliente"
+        mensaje="¿Seguro que querés dar de baja este cliente? Se marcará como inactivo."
+        textoAccion="Dar de baja"
+        variant="danger"
+        onConfirmar={async () => {
+          if (clienteAEliminar !== null) {
+            await darDeBaja(clienteAEliminar)
+            setClienteAEliminar(null)
+          }
+        }}
+        onCancelar={() => setClienteAEliminar(null)}
+      />
     </div>
   )
 }

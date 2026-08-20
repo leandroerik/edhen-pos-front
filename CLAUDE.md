@@ -1,7 +1,7 @@
 # edhen-pos-front
 
 Frontend del sistema de punto de venta para tienda de ropa (edhen POS).
-Repo hermano: edhen-pos-back (API REST separada, no está en este repo).
+Repo hermano: edhen-pos-back (API REST separada).
 
 ## Contexto del proyecto
 Este frontend consume la API documentada en edhen-pos-back. El contrato de
@@ -9,8 +9,8 @@ endpoints está descripto en docs/03-funcionalidades-y-casos-especiales.md
 (copiar esa carpeta docs/ a este repo también, o referenciarla como submódulo).
 
 ## Stack
-- React 18 + Vite + TypeScript
-- TailwindCSS para estilos
+- React 19 + Vite 8 + TypeScript
+- TailwindCSS v4 para estilos
 - react-router-dom para ruteo
 - axios para llamadas HTTP
 
@@ -24,9 +24,6 @@ endpoints está descripto en docs/03-funcionalidades-y-casos-especiales.md
   src/types/, reflejando exactamente las entidades del backend
 - Componentes de un solo feature no se importan desde otro feature
   directamente — si hace falta compartir, se sube a src/shared/
-
-## Estado actual
-Ver plan de sprints. Sprint actual: Sprint 0 (setup + layout base).
 
 ## Backend
 Corre en http://localhost:8080 en desarrollo (Spring Boot, repo aparte).

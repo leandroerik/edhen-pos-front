@@ -6,12 +6,9 @@ Explica cómo funciona el módulo de Stock en `edhen-pos-front`
 `producto_variantes.stock` directo — siempre a través de un
 `MovimientoStock`"*.
 
-> Estado actual: mock en memoria (`src/api/stock.api.ts`), que replica el
-> contrato `GET /api/stock`, `POST /api/stock/ajuste`, `GET
-> /api/stock/{varianteId}/movimientos` del Documento 3. El store real de
-> productos y movimientos vive en `src/api/productos.api.ts` (misma fuente
-> de verdad que usan Productos y Ventas) — `stock.api.ts` solo lo expone
-> con la forma del contrato de este módulo.
+> Estado actual: la app consume la API REST real del backend
+> (`src/api/stock.api.ts`). Los componentes y flujos están descritos a
+> continuación.
 
 ## 1. Un solo punto de mutación de stock
 
@@ -28,9 +25,9 @@ llama y con qué `tipo`:
 | Venta anulada | `ventas.api.ts` → `anularVenta` | `AJUSTE_POSITIVO` | positiva (revierte), motivo automático "Anulación de venta ..." |
 | Ajuste manual desde `/stock` | `stock.api.ts` → `ajustarStock` | `AJUSTE_POSITIVO` / `AJUSTE_NEGATIVO` | la que carga el usuario, con motivo obligatorio |
 
-Los 10 productos de ejemplo del mock (que no pasaron por `crearVariante`)
-tienen un `INGRESO` sintético generado al arrancar la app, para que el
-historial no aparezca vacío al probar con ellos.
+Los 10 productos de ejemplo del DataInitializer (que no pasaron por
+`crearVariante`) tienen un `INGRESO` sintético generado al arrancar la
+app, para que el historial no aparezca vacío al probar con ellos.
 
 > Nota sobre `anularVenta`: el enum de `tipo` del Documento 2 no tiene un
 > valor específico para "reversión de venta anulada" (solo `VENTA`,
@@ -41,17 +38,29 @@ historial no aparezca vacío al probar con ellos.
 
 ## 2. Pantalla `/stock`
 
-Listado de **todas** las variantes de todos los productos (no solo un
-producto a la vez, a diferencia de la tabla de variantes dentro de
-Productos), con:
+Listado de **todas** las variantes de todos los productos, con 2 modos de
+visualización:
 
-- Buscador por nombre de producto o SKU (client-side, el dataset es
-  chico).
-- Checkbox "Solo stock bajo mínimo" → filtra server-side vía
-  `listarStock({ bajoMinimo: true })`, el mismo filtro que describe el
-  contrato de `GET /api/stock`.
-- Fila con stock actual resaltado en rojo si está bajo el mínimo.
-- "Ver / Ajustar" abre un modal con el detalle de esa variante.
+### Modo búsqueda (con texto en el buscador)
+- Barra de búsqueda grande con autofocus, busca por nombre de producto,
+  SKU, color o talle (client-side).
+- Mientras se escribe, aparecen las variantes que coinciden en una lista
+  plana: nombre del producto, color dot + color/talle, stock (rojo si
+  bajo mínimo, amber si sin stock), y botón **"Ajustar"** que abre el
+  modal directamente.
+- Contador de variantes encontradas.
+
+### Modo agrupado (sin búsqueda)
+- Productos agrupados con expand/collapse.
+- Filtro por categoría (select) y "Bajo mínimo" (checkbox).
+- Botón "Limpiar filtros" cuando hay filtros activos.
+- Al expandir, cada variante muestra color/talle, SKU, stock, y botón
+  "Ajustar".
+
+### Filtros
+- `GET /api/stock` ahora acepta `categoriaId` como parámetro opcional
+  (filtrado server-side).
+- El checkbox "Bajo mínimo" usa `bajoMinimo=true` (filtrado server-side).
 
 ## 3. Modal de variante: ajuste + historial en un solo lugar
 

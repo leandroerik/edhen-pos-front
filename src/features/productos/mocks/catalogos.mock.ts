@@ -37,14 +37,14 @@ export const COLORES = {
 const talleSuperior = (nombre: string, orden: number): Talla => ({
   id: 100 + orden,
   nombre,
-  tipo: 'ROPA_SUPERIOR',
+  tipo: 'ROPA',
   orden,
 })
 
 const talleInferior = (nombre: string, orden: number): Talla => ({
   id: 200 + orden,
   nombre,
-  tipo: 'ROPA_INFERIOR',
+  tipo: 'ROPA',
   orden,
 })
 
@@ -57,14 +57,11 @@ export const TALLAS_SUPERIOR = {
 }
 
 export const TALLAS_INFERIOR = {
-  t38: talleInferior('38', 1),
-  t39: talleInferior('39', 2),
-  t40: talleInferior('40', 3),
-  t41: talleInferior('41', 4),
-  t42: talleInferior('42', 5),
-  t43: talleInferior('43', 6),
-  t44: talleInferior('44', 7),
-  t45: talleInferior('45', 8),
+  t38: talleInferior('38', 6),
+  t39: talleInferior('39', 7),
+  t40: talleInferior('40', 8),
+  t41: talleInferior('41', 9),
+  t42: talleInferior('42', 10),
 }
 
 export const categoriasMock: Categoria[] = Object.values(CATEGORIAS)

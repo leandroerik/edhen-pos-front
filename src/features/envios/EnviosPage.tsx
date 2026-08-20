@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { avanzarEstadoEnvio, cancelarEnvio, listarEnvios } from '../../api/envios.api'
 import type { EstadoEnvio, Envio } from '../../types/envio'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
 
 const NOMBRE_ESTADO: Record<EstadoEnvio, string> = {
   PENDIENTE: 'Pendiente',
@@ -39,6 +33,7 @@ interface Resultado {
 }
 
 export function EnviosPage() {
+  const navigate = useNavigate()
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
   const [reloadToken, setReloadToken] = useState(0)
   const [resultado, setResultado] = useState<Resultado | null>(null)
@@ -159,7 +154,11 @@ export function EnviosPage() {
                 const accionSiguiente = ACCION_SIGUIENTE[envio.estadoEnvio]
                 const puedeCancelar = envio.estadoEnvio !== 'ENTREGADO' && envio.estadoEnvio !== 'CANCELADO'
                 return (
-                  <tr key={envio.id} className="hover:bg-gray-50">
+                  <tr
+                    key={envio.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => navigate(`/envios/${envio.id}`)}
+                  >
                     <td className="px-4 py-3 font-mono text-xs text-gray-700">{envio.codigoEnvio}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">
                       {envio.cliente.nombre} {envio.cliente.apellido}
@@ -183,7 +182,7 @@ export function EnviosPage() {
                         {accionSiguiente && (
                           <button
                             type="button"
-                            onClick={() => handleAvanzar(envio.id)}
+                            onClick={(e) => { e.stopPropagation(); handleAvanzar(envio.id) }}
                             className="font-medium text-gray-700 hover:text-gray-900"
                           >
                             {accionSiguiente}
@@ -192,7 +191,7 @@ export function EnviosPage() {
                         {puedeCancelar && (
                           <button
                             type="button"
-                            onClick={() => handleCancelar(envio.id)}
+                            onClick={(e) => { e.stopPropagation(); handleCancelar(envio.id) }}
                             className="font-medium text-red-600 hover:text-red-800"
                           >
                             Cancelar

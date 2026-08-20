@@ -1,4 +1,4 @@
-export type TallaTipo = 'ROPA_SUPERIOR' | 'ROPA_INFERIOR' | 'CALZADO' | 'UNICO'
+export type TallaTipo = 'ROPA' | 'CALZADO'
 
 export interface Talla {
   id: number

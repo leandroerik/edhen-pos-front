@@ -1,24 +1,8 @@
 import type { Venta } from '../../../types/venta'
+import { formatPrecio, formatPorcentaje } from '../../../shared/format'
 import { calcularResumen, calcularVariacion } from '../lib/agregaciones'
 import { exportarCsv } from '../lib/exportarCsv'
 import { SelectorPeriodo } from './SelectorPeriodo'
-
-const formatPrecio = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
-
-const formatPorcentaje = new Intl.NumberFormat('es-AR', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-})
-
-const ATAJOS_COMPARACION = [
-  { clave: 'semana', label: 'Esta semana', desde: inicioSemana(), hasta: new Date() },
-  { clave: 'mes', label: 'Este mes', desde: inicioMes(), hasta: new Date() },
-  { clave: 'trim', label: 'Trimestre', desde: inicioTrimestre(), hasta: new Date() },
-]
 
 function inicioSemana(): Date {
   const d = new Date()
@@ -44,11 +28,13 @@ function inicioTrimestre(): Date {
   return d
 }
 
-function toInputDate(fecha: Date): string {
-  const y = fecha.getFullYear()
-  const m = String(fecha.getMonth() + 1).padStart(2, '0')
-  const d = String(fecha.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+function construirAtajosComparacion() {
+  const ahora = new Date()
+  return [
+    { clave: 'semana', label: 'Esta semana', desde: inicioSemana(), hasta: ahora },
+    { clave: 'mes', label: 'Este mes', desde: inicioMes(), hasta: ahora },
+    { clave: 'trim', label: 'Trimestre', desde: inicioTrimestre(), hasta: ahora },
+  ]
 }
 
 interface ComparacionPeriodosControlProps {
@@ -72,6 +58,7 @@ export function ComparacionPeriodosControl({
   onChangeA,
   onChangeB,
 }: ComparacionPeriodosControlProps) {
+  const atajos = construirAtajosComparacion()
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
       <SelectorPeriodo
@@ -79,7 +66,7 @@ export function ComparacionPeriodosControl({
         desde={desdeA}
         hasta={hastaA}
         atajoActivo={atajoA}
-        atajos={ATAJOS_COMPARACION}
+        atajos={atajos}
         onChange={onChangeA}
       />
       <SelectorPeriodo
@@ -87,7 +74,7 @@ export function ComparacionPeriodosControl({
         desde={desdeB}
         hasta={hastaB}
         atajoActivo={atajoB}
-        atajos={ATAJOS_COMPARACION}
+        atajos={atajos}
         onChange={onChangeB}
       />
     </div>

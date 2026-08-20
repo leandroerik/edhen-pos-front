@@ -7,6 +7,7 @@ import {
   eliminarCategoria,
   listarCategorias,
 } from '../../../api/catalogos.api'
+import { ConfirmModal } from '../../../shared/components/ConfirmModal'
 import type { Categoria } from '../../../types/categoria'
 
 interface CategoriasModalProps {
@@ -21,15 +22,16 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
 
-  // Formulario nueva categoría
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevaDescripcion, setNuevaDescripcion] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Edición en línea
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [editNombre, setEditNombre] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
+
+  const [toggleCat, setToggleCat] = useState<Categoria | null>(null)
+  const [eliminarCat, setEliminarCat] = useState<Categoria | null>(null)
 
   const cargar = async () => {
     try {
@@ -52,6 +54,12 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
     }
   }, [abierto])
 
+  useEffect(() => {
+    if (!exito) return
+    const t = setTimeout(() => setExito(null), 3000)
+    return () => clearTimeout(t)
+  }, [exito])
+
   if (!abierto) return null
 
   const handleCrear = async (e: FormEvent) => {
@@ -63,13 +71,10 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
     try {
       setGuardando(true)
       setError(null)
-      await crearCategoria({
-        nombre: nuevoNombre,
-        descripcion: nuevaDescripcion,
-      })
+      await crearCategoria({ nombre: nuevoNombre, descripcion: nuevaDescripcion })
       setNuevoNombre('')
       setNuevaDescripcion('')
-      setExito('Categoría agregada exitosamente.')
+      setExito('Categoría creada.')
       await cargar()
       onActualizado?.()
     } catch (err: unknown) {
@@ -105,165 +110,144 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
     try {
       setGuardando(true)
       setError(null)
-      await actualizarCategoria(id, {
-        nombre: editNombre,
-        descripcion: editDescripcion,
-      })
+      await actualizarCategoria(id, { nombre: editNombre, descripcion: editDescripcion })
       cancelarEdicion()
-      setExito('Categoría modificada con éxito.')
+      setExito('Categoría actualizada.')
       await cargar()
       onActualizado?.()
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Error al actualizar la categoría.'
-      setError(msg || 'Error al actualizar la categoría.')
+          : 'Error al actualizar.'
+      setError(msg || 'Error al actualizar.')
     } finally {
       setGuardando(false)
     }
   }
 
-  const handleToggleActivo = async (cat: Categoria) => {
+  const handleToggleActivo = (cat: Categoria) => {
+    setToggleCat(cat)
+  }
+
+  const confirmarToggle = async () => {
+    if (!toggleCat) return
+    const cat = toggleCat
+    const activa = cat.activo !== false
     try {
       setError(null)
-      if (cat.activo === false) {
-        await activarCategoria(cat.id)
-        setExito(`Categoría "${cat.nombre}" activada.`)
-      } else {
+      if (activa) {
         await desactivarCategoria(cat.id)
-        setExito(`Categoría "${cat.nombre}" desactivada.`)
+      } else {
+        await activarCategoria(cat.id)
       }
+      setExito(activa ? `"${cat.nombre}" desactivada.` : `"${cat.nombre}" activada.`)
       await cargar()
       onActualizado?.()
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Error al cambiar estado de la categoría.'
+          : 'Error al cambiar estado.'
       setError(msg || 'Error al cambiar estado.')
+    } finally {
+      setToggleCat(null)
     }
   }
 
-  const handleEliminar = async (cat: Categoria) => {
-    const confirmar = window.confirm(
-      `¿Estás seguro de eliminar la categoría "${cat.nombre}"? Si tiene productos asignados, no se podrá borrar.`,
-    )
-    if (!confirmar) return
+  const handleEliminar = (cat: Categoria) => {
+    setEliminarCat(cat)
+  }
 
+  const confirmarEliminar = async () => {
+    if (!eliminarCat) return
+    const cat = eliminarCat
     try {
       setError(null)
       await eliminarCategoria(cat.id)
-      setExito(`Categoría "${cat.nombre}" eliminada.`)
+      setExito(`"${cat.nombre}" eliminada.`)
       await cargar()
       onActualizado?.()
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'No se puede eliminar la categoría.'
-      setError(msg || 'No se pudo eliminar la categoría.')
+          : 'No se pudo eliminar.'
+      setError(msg || 'No se pudo eliminar.')
+    } finally {
+      setEliminarCat(null)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl">
-        {/* Encabezado */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Gestión de Categorías</h2>
-            <p className="text-xs text-gray-500">
-              Crea nuevas categorías, edita sus nombres o activa/desactiva las que no uses.
-            </p>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+          <h2 className="text-sm font-semibold text-gray-900">Categorías</h2>
           <button
             type="button"
             onClick={onCerrar}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-4">
-          {/* Mensajes de Feedback */}
+        <div className="overflow-y-auto px-5 py-4">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
-              {error}
-            </div>
+            <div className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           {exito && (
-            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 border border-green-200">
-              {exito}
-            </div>
+            <div className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{exito}</div>
           )}
 
-          {/* Formulario de Alta */}
-          <form
-            onSubmit={handleCrear}
-            className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
-          >
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-700">
-              + Agregar Nueva Categoría
-            </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-              <div className="sm:col-span-5">
-                <label className="block text-xs font-medium text-gray-700">Nombre *</label>
-                <input
-                  type="text"
-                  value={nuevoNombre}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                  placeholder="Ej. Blusas, Poleras..."
-                  className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
-                  required
-                />
-              </div>
-              <div className="sm:col-span-5">
-                <label className="block text-xs font-medium text-gray-700">Descripción</label>
-                <input
-                  type="text"
-                  value={nuevaDescripcion}
-                  onChange={(e) => setNuevaDescripcion(e.target.value)}
-                  placeholder="Detalle o uso (opcional)"
-                  className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
-                />
-              </div>
-              <div className="flex items-end sm:col-span-2">
-                <button
-                  type="submit"
-                  disabled={guardando}
-                  className="w-full rounded-md bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                >
-                  {guardando ? 'Guardando...' : 'Agregar'}
-                </button>
-              </div>
-            </div>
+          <form onSubmit={handleCrear} className="mb-4 flex gap-2">
+            <input
+              type="text"
+              value={nuevoNombre}
+              onChange={(e) => setNuevoNombre(e.target.value)}
+              placeholder="Nombre"
+              className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+              required
+            />
+            <input
+              type="text"
+              value={nuevaDescripcion}
+              onChange={(e) => setNuevaDescripcion(e.target.value)}
+              placeholder="Descripción (opcional)"
+              className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={guardando}
+              className="shrink-0 rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              {guardando ? '...' : 'Agregar'}
+            </button>
           </form>
 
-          {/* Listado de Categorías */}
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="overflow-hidden rounded-lg border border-gray-200">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2.5 text-left">Categoría</th>
-                  <th className="px-4 py-2.5 text-left">Descripción</th>
-                  <th className="px-4 py-2.5 text-center">Estado</th>
-                  <th className="px-4 py-2.5 text-right">Acciones</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Categoría</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Descripción</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Estado</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 text-sm">
+              <tbody className="divide-y divide-gray-100">
                 {cargando ? (
                   <tr>
-                    <td colSpan={4} className="py-6 text-center text-gray-500">
-                      Cargando categorías...
-                    </td>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">Cargando...</td>
                   </tr>
                 ) : categorias.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-6 text-center text-gray-500">
-                      No hay categorías registradas.
-                    </td>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No hay categorías.</td>
                   </tr>
                 ) : (
                   categorias.map((cat) => {
@@ -273,11 +257,11 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
                     return (
                       <tr
                         key={cat.id}
-                        className={!esActiva ? 'bg-gray-50/70 text-gray-400' : 'hover:bg-gray-50'}
+                        className={!esActiva ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'}
                       >
                         {estaEditando ? (
                           <>
-                            <td className="px-4 py-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 value={editNombre}
@@ -285,7 +269,7 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
                                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-gray-500 focus:outline-none"
                               />
                             </td>
-                            <td className="px-4 py-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 value={editDescripcion}
@@ -293,29 +277,29 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
                                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-gray-500 focus:outline-none"
                               />
                             </td>
-                            <td className="px-4 py-2 text-center">
-                              <span
-                                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                  esActiva ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'
-                                }`}
+                            <td className="px-3 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleActivo(cat)}
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${esActiva ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                               >
                                 {esActiva ? 'Activa' : 'Inactiva'}
-                              </span>
+                              </button>
                             </td>
-                            <td className="px-4 py-2 text-right">
+                            <td className="px-3 py-2 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <button
                                   type="button"
                                   onClick={() => handleGuardarEdicion(cat.id)}
                                   disabled={guardando}
-                                  className="rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+                                  className="rounded bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
                                 >
                                   Guardar
                                 </button>
                                 <button
                                   type="button"
                                   onClick={cancelarEdicion}
-                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
                                 >
                                   Cancelar
                                 </button>
@@ -324,45 +308,32 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-3 font-medium text-gray-900">
-                              {cat.nombre}
+                            <td className="px-4 py-2.5 text-sm font-medium text-gray-900">{cat.nombre}</td>
+                            <td className="px-4 py-2.5 text-sm text-gray-500">
+                              {cat.descripcion || <span className="text-gray-400">—</span>}
                             </td>
-                            <td className="px-4 py-3 text-gray-500">
-                              {cat.descripcion || <span className="text-gray-400 italic">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span
-                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                  esActiva ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'
-                                }`}
+                            <td className="px-4 py-2.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleActivo(cat)}
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${esActiva ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                               >
                                 {esActiva ? 'Activa' : 'Inactiva'}
-                              </span>
+                              </button>
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-4 py-2.5 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => iniciarEdicion(cat)}
-                                  className="text-xs font-medium text-indigo-600 hover:text-indigo-900"
+                                  className="text-xs font-medium text-gray-700 hover:text-gray-900"
                                 >
                                   Editar
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleActivo(cat)}
-                                  className={`text-xs font-medium ${
-                                    esActiva
-                                      ? 'text-amber-600 hover:text-amber-800'
-                                      : 'text-emerald-600 hover:text-emerald-800'
-                                  }`}
-                                >
-                                  {esActiva ? 'Desactivar' : 'Activar'}
-                                </button>
-                                <button
-                                  type="button"
                                   onClick={() => handleEliminar(cat)}
-                                  className="text-xs font-medium text-red-600 hover:text-red-900"
+                                  className="text-xs font-medium text-red-600 hover:text-red-800"
                                 >
                                   Eliminar
                                 </button>
@@ -379,17 +350,44 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
           </div>
         </div>
 
-        {/* Pie del modal */}
-        <div className="flex justify-end border-t border-gray-200 px-6 py-3">
+        <div className="flex justify-end border-t border-gray-200 px-5 py-3">
           <button
             type="button"
             onClick={onCerrar}
-            className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            className="rounded-md border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Cerrar
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        abierto={toggleCat !== null}
+        titulo={toggleCat?.activo !== false ? 'Desactivar categoría' : 'Activar categoría'}
+        mensaje={
+          toggleCat
+            ? toggleCat.activo !== false
+              ? `¿Desactivar "${toggleCat.nombre}"?`
+              : `¿Activar "${toggleCat.nombre}"?`
+            : ''
+        }
+        textoAccion={toggleCat?.activo !== false ? 'Desactivar' : 'Activar'}
+        onConfirmar={confirmarToggle}
+        onCancelar={() => setToggleCat(null)}
+      />
+      <ConfirmModal
+        abierto={eliminarCat !== null}
+        titulo="Eliminar categoría"
+        mensaje={
+          eliminarCat
+            ? `¿Eliminar "${eliminarCat.nombre}"? Si tiene productos asignados no se podrá borrar.`
+            : ''
+        }
+        textoAccion="Eliminar"
+        variant="danger"
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setEliminarCat(null)}
+      />
     </div>
   )
 }
