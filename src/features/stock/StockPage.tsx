@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listarStock } from '../../api/stock.api'
+import { SkeletonRow } from '../../shared/components/Skeleton'
 import { useCatalogos } from '../../shared/hooks/useCatalogos'
 import { StockVarianteModal } from './components/StockVarianteModal'
+import { CargaStockPanel } from './components/CargaStockPanel'
 import type { Producto, ProductoVariante } from '../../types/producto'
 
 interface Fila {
@@ -156,7 +158,7 @@ export function StockPage() {
               <p className="mb-2 text-xs text-gray-400">
                 {filasBuscadas.length} {filasBuscadas.length === 1 ? 'variante' : 'variantes'} encontradas
               </p>
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -220,7 +222,7 @@ export function StockPage() {
 
       {/* Vista agrupada (sin búsqueda) */}
       {!mostrarBusqueda && (
-        <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -237,13 +239,6 @@ export function StockPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {cargando && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
-                    Cargando...
-                  </td>
-                </tr>
-              )}
               {!cargando && grupos.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
@@ -251,6 +246,7 @@ export function StockPage() {
                   </td>
                 </tr>
               )}
+              {cargando && <SkeletonRow colSpan={4} rows={5} />}
               {!cargando &&
                 grupos.map((grupo) => {
                   const expandido = productoExpandidoId === grupo.producto.id
@@ -262,7 +258,7 @@ export function StockPage() {
                       >
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           <span className="text-gray-400">{expandido ? '▾' : '▸'}</span> {grupo.producto.nombre}
-                          <span className="ml-2 text-xs text-gray-400">{grupo.producto.categoria.nombre}</span>
+                          <span className="ml-2 text-xs text-gray-400">{grupo.producto.categoria?.nombre ?? 'Sin categoría'}</span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {grupo.variantes.length}
@@ -280,6 +276,13 @@ export function StockPage() {
                       {expandido && (
                         <tr>
                           <td colSpan={4} className="bg-gray-50 px-4 py-2">
+                            <div className="mb-2">
+                              <CargaStockPanel
+                                producto={grupo.producto}
+                                variantes={grupo.variantes}
+                                onAplicado={() => setReloadToken((v) => v + 1)}
+                              />
+                            </div>
                             <table className="w-full text-sm">
                               <tbody className="divide-y divide-gray-200">
                                 {grupo.variantes.map((variante) => {

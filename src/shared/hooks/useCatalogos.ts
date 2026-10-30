@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { contarUsoCatalogo } from '../../api/productos.api'
 import { listarCategorias, listarColores, listarTallas } from '../../api/catalogos.api'
+import { ordenarTallas } from '../tallas'
 import type { Categoria } from '../../types/categoria'
 import type { Color } from '../../types/color'
 import type { Talla } from '../../types/talla'
@@ -23,7 +24,10 @@ async function cargarCatalogos() {
   return {
     categorias,
     colores: ordenarPorUso(colores, usos.colores),
-    tallas: ordenarPorUso(tallas, usos.tallas),
+    // Las talles van en orden de tamaño (letras primero y después las
+    // numéricas), no por uso: el uso mezcla S con 42 y no respeta la
+    // secuencia que espera quien carga un producto.
+    tallas: ordenarTallas(tallas),
   }
 }
 
@@ -43,6 +47,7 @@ export function useCatalogos() {
       setColores(datos.colores)
       setTallas(datos.tallas)
       setCargando(false)
+      return datos
     })
   }, [])
 

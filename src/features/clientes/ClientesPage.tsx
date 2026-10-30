@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { SkeletonRow } from '../../shared/components/Skeleton'
 import { useClientes } from './hooks/useClientes'
 import type { TipoCliente } from '../../types/cliente'
 
@@ -72,7 +73,7 @@ export function ClientesPage() {
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -97,13 +98,7 @@ export function ClientesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {cargando && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
-                  Cargando...
-                </td>
-              </tr>
-            )}
+            {cargando && <SkeletonRow colSpan={6} rows={6} />}
             {!cargando && clientes.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">

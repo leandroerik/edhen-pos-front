@@ -79,8 +79,8 @@ export function agruparPorCategoria(
   for (const v of ventas) {
     for (const d of v.detalles) {
       const prod = productoPorId.get(d.producto.id)
-      const catId = prod?.categoria.id ?? 0
-      const catNombre = prod?.categoria.nombre ?? 'Sin categoría'
+      const catId = prod?.categoria?.id ?? 0
+      const catNombre = prod?.categoria?.nombre ?? 'Sin categoría'
       const existente = mapa.get(catId)
       if (existente) {
         existente.unidades += d.cantidad
@@ -156,7 +156,7 @@ export function rankingProductos(
         mapa.set(d.producto.id, {
           productoId: d.producto.id,
           nombre: d.producto.nombre,
-          categoriaNombre: prod?.categoria.nombre ?? 'Sin categoría',
+          categoriaNombre: prod?.categoria?.nombre ?? 'Sin categoría',
           unidades: d.cantidad,
           monto: d.subtotal,
         })
@@ -213,7 +213,7 @@ export function desglosarDetalles(
       const prod = productoPorId.get(d.producto.id)
       items.push({
         producto: d.producto.nombre,
-        categoria: prod?.categoria.nombre ?? 'Sin categoría',
+        categoria: prod?.categoria?.nombre ?? 'Sin categoría',
         cantidad: d.cantidad,
         precioUnitario: d.precioUnitario,
         descuento: d.descuentoItem,
@@ -358,8 +358,8 @@ export function agruparStockPorCategoria(
 ): StockCategoria[] {
   const mapa = new Map<number, StockCategoria>()
   for (const { producto, variante } of stock) {
-    const catId = producto.categoria.id
-    const catNombre = producto.categoria.nombre
+    const catId = producto.categoria?.id ?? 0
+    const catNombre = producto.categoria?.nombre ?? 'Sin categoría'
     const precio = variante.precio ?? producto.precioBase
     const existente = mapa.get(catId)
     if (existente) {
@@ -433,4 +433,313 @@ export function agruparEnviosPorEstado(envios: Envio[]): EnviosEstado[] {
   return [...mapa.entries()]
     .map(([estado, cantidad]) => ({ estado, cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad)
+}
+
+// --- Horarios Pico y Días de Mayor Facturación ---
+
+export interface HorarioVentas {
+  hora: number
+  etiqueta: string
+  total: number
+  cantidad: number
+  ticketPromedio: number
+  unidades: number
+}
+
+export function agruparPorHora(ventas: Venta[]): HorarioVentas[] {
+  const mapa = new Map<number, { total: number; cantidad: number; unidades: number }>()
+
+  // Inicializar franjas comerciales típicas (de 8 a 22 hs) o dinámicas
+  for (let h = 8; h <= 22; h++) {
+    mapa.set(h, { total: 0, cantidad: 0, unidades: 0 })
+  }
+
+  for (const v of ventas) {
+    const fecha = new Date(v.fechaVenta)
+    const hora = fecha.getHours()
+    const unidadesVenta = v.detalles.reduce((acc, d) => acc + d.cantidad, 0)
+    const existente = mapa.get(hora)
+    if (existente) {
+      existente.total += v.total
+      existente.cantidad += 1
+      existente.unidades += unidadesVenta
+    } else {
+      mapa.set(hora, { total: v.total, cantidad: 1, unidades: unidadesVenta })
+    }
+  }
+
+  return [...mapa.entries()]
+    .sort(([hA], [hB]) => hA - hB)
+    .map(([hora, datos]) => ({
+      hora,
+      etiqueta: `${String(hora).padStart(2, '0')}:00 - ${String(hora).padStart(2, '0')}:59`,
+      total: datos.total,
+      cantidad: datos.cantidad,
+      unidades: datos.unidades,
+      ticketPromedio: datos.cantidad > 0 ? datos.total / datos.cantidad : 0,
+    }))
+}
+
+export interface DiaSemanaVentas {
+  diaNumero: number
+  diaNombre: string
+  diaCorto: string
+  total: number
+  cantidad: number
+  ticketPromedio: number
+  unidades: number
+}
+
+const NOMBRES_DIAS = [
+  { numero: 1, nombre: 'Lunes', corto: 'Lun' },
+  { numero: 2, nombre: 'Martes', corto: 'Mar' },
+  { numero: 3, nombre: 'Miércoles', corto: 'Mié' },
+  { numero: 4, nombre: 'Jueves', corto: 'Jue' },
+  { numero: 5, nombre: 'Viernes', corto: 'Vie' },
+  { numero: 6, nombre: 'Sábado', corto: 'Sáb' },
+  { numero: 0, nombre: 'Domingo', corto: 'Dom' },
+]
+
+export function agruparPorDiaSemana(ventas: Venta[]): DiaSemanaVentas[] {
+  const mapa = new Map<number, { total: number; cantidad: number; unidades: number }>()
+
+  for (const { numero } of NOMBRES_DIAS) {
+    mapa.set(numero, { total: 0, cantidad: 0, unidades: 0 })
+  }
+
+  for (const v of ventas) {
+    const fecha = new Date(v.fechaVenta)
+    const dia = fecha.getDay()
+    const unidadesVenta = v.detalles.reduce((acc, d) => acc + d.cantidad, 0)
+    const actual = mapa.get(dia)
+    if (actual) {
+      actual.total += v.total
+      actual.cantidad += 1
+      actual.unidades += unidadesVenta
+    }
+  }
+
+  return NOMBRES_DIAS.map((d) => {
+    const datos = mapa.get(d.numero) ?? { total: 0, cantidad: 0, unidades: 0 }
+    return {
+      diaNumero: d.numero,
+      diaNombre: d.nombre,
+      diaCorto: d.corto,
+      total: datos.total,
+      cantidad: datos.cantidad,
+      unidades: datos.unidades,
+      ticketPromedio: datos.cantidad > 0 ? datos.total / datos.cantidad : 0,
+    }
+  })
+}
+
+// --- Análisis de Rotación de Ropa (Estrellas vs. Estancadas) ---
+
+export interface PrendaRotacion {
+  productoId: number
+  varianteId: number
+  nombreProducto: string
+  categoriaNombre: string
+  colorNombre: string
+  colorHex?: string
+  tallaNombre: string
+  sku: string
+  unidadesVendidas: number
+  totalFacturado: number
+  stockActual: number
+  stockMinimo: number
+  precioUnitario: number
+  estadoRotacion: 'ESTRELLA' | 'ESTANCADA' | 'NORMAL'
+}
+
+export interface AnalisisRotacion {
+  estrellas: PrendaRotacion[]
+  estancadas: PrendaRotacion[]
+  valorCapitalEstancado: number
+  totalEstancadas: number
+  totalEstrellas: number
+}
+
+export function calcularRotacionPrendas(
+  ventas: Venta[],
+  stock: Array<{ producto: Producto; variante: ProductoVariante }>,
+): AnalisisRotacion {
+  // 1. Mapear ventas por varianteId
+  const ventasPorVariante = new Map<number, { unidades: number; monto: number }>()
+  for (const v of ventas) {
+    for (const d of v.detalles) {
+      const actual = ventasPorVariante.get(d.varianteId) ?? { unidades: 0, monto: 0 }
+      actual.unidades += d.cantidad
+      actual.monto += d.subtotal
+      ventasPorVariante.set(d.varianteId, actual)
+    }
+  }
+
+  const todasLasPrendas: PrendaRotacion[] = stock.map(({ producto, variante }) => {
+    const vInfo = ventasPorVariante.get(variante.id) ?? { unidades: 0, monto: 0 }
+    const precio = variante.precio ?? producto.precioBase
+
+    let estadoRotacion: 'ESTRELLA' | 'ESTANCADA' | 'NORMAL' = 'NORMAL'
+
+    // Estrella: Vendió bien (> 0) y le queda poco stock (<= stockMinimo o stock < 3)
+    if (vInfo.unidades >= 2 && variante.stock <= Math.max(variante.stockMinimo, 3)) {
+      estadoRotacion = 'ESTRELLA'
+    } else if (vInfo.unidades === 0 && variante.stock > 0) {
+      // Estancada: Tiene stock acumulado pero 0 ventas en el período
+      estadoRotacion = 'ESTANCADA'
+    }
+
+    return {
+      productoId: producto.id,
+      varianteId: variante.id,
+      nombreProducto: producto.nombre,
+      categoriaNombre: producto.categoria?.nombre ?? 'Sin categoría',
+      colorNombre: variante.color?.nombre ?? 'Sin color',
+      colorHex: variante.color?.codigoHex,
+      tallaNombre: variante.talla?.nombre ?? 'U',
+      sku: variante.sku,
+      unidadesVendidas: vInfo.unidades,
+      totalFacturado: vInfo.monto,
+      stockActual: variante.stock,
+      stockMinimo: variante.stockMinimo,
+      precioUnitario: precio,
+      estadoRotacion,
+    }
+  })
+
+  // Ordenar estrellas por mayor cantidad vendida primero
+  const estrellas = todasLasPrendas
+    .filter((p) => p.estadoRotacion === 'ESTRELLA' || (p.unidadesVendidas > 0 && p.stockActual <= p.stockMinimo))
+    .sort((a, b) => b.unidadesVendidas - a.unidadesVendidas)
+
+  // Ordenar estancadas por mayor stock inmovilizado primero
+  const estancadas = todasLasPrendas
+    .filter((p) => p.estadoRotacion === 'ESTANCADA')
+    .sort((a, b) => b.stockActual * b.precioUnitario - a.stockActual * a.precioUnitario)
+
+  const valorCapitalEstancado = estancadas.reduce(
+    (acc, p) => acc + p.stockActual * p.precioUnitario,
+    0,
+  )
+
+  return {
+    estrellas,
+    estancadas,
+    valorCapitalEstancado,
+    totalEstancadas: estancadas.length,
+    totalEstrellas: estrellas.length,
+  }
+}
+
+// --- Resumen Ejecutivo Consolidado ---
+
+export interface ResumenEjecutivoData {
+  totalFacturado: number
+  totalDescuentos: number
+  totalNeto: number
+  cantidadVentas: number
+  unidadesVendidas: number
+  ticketPromedio: number
+  horaPico: { etiqueta: string; total: number; cantidad: number } | null
+  diaPico: { diaNombre: string; total: number; cantidad: number } | null
+  medioPagoPrincipal: { medio: MedioPago; monto: number; porcentaje: number } | null
+  canalPrincipal: { canal: TipoCompra; monto: number; porcentaje: number } | null
+  topCategoria: { nombre: string; monto: number; unidades: number } | null
+  topProducto: { nombre: string; monto: number; unidades: number } | null
+  stockValorTotal: number
+  prendasCriticas: number
+  prendasEstancadas: number
+}
+
+export function calcularResumenEjecutivo(
+  ventas: Venta[],
+  productos: Producto[],
+  stock: Array<{ producto: Producto; variante: ProductoVariante }>,
+): ResumenEjecutivoData {
+  const totalFacturado = ventas.reduce((acc, v) => acc + v.total, 0)
+  const totalDescuentos = ventas.reduce((acc, v) => acc + (v.descuentoTotal ?? 0), 0)
+  const unidadesVendidas = ventas.reduce(
+    (acc, v) => acc + v.detalles.reduce((accD, d) => accD + d.cantidad, 0),
+    0,
+  )
+  const cantidadVentas = ventas.length
+  const ticketPromedio = cantidadVentas > 0 ? totalFacturado / cantidadVentas : 0
+
+  // Horario pico
+  const porHora = agruparPorHora(ventas).filter((h) => h.total > 0)
+  const horaPico = porHora.length > 0
+    ? [...porHora].sort((a, b) => b.total - a.total)[0]
+    : null
+
+  // Día pico
+  const porDia = agruparPorDiaSemana(ventas).filter((d) => d.total > 0)
+  const diaPico = porDia.length > 0
+    ? [...porDia].sort((a, b) => b.total - a.total)[0]
+    : null
+
+  // Medio de pago principal
+  const porMedio = agruparPorMedioPago(ventas)
+  const medioPagoPrincipal = porMedio.length > 0
+    ? {
+        medio: porMedio[0].medio,
+        monto: porMedio[0].monto,
+        porcentaje: totalFacturado > 0 ? porMedio[0].monto / totalFacturado : 0,
+      }
+    : null
+
+  // Canal principal
+  const porCanal = agruparPorCanal(ventas)
+  const canalPrincipal = porCanal.length > 0
+    ? {
+        canal: porCanal[0].canal,
+        monto: porCanal[0].monto,
+        porcentaje: totalFacturado > 0 ? porCanal[0].monto / totalFacturado : 0,
+      }
+    : null
+
+  // Categoría top
+  const porCat = agruparPorCategoria(ventas, productos)
+  const topCategoria = porCat.length > 0
+    ? {
+        nombre: porCat[0].categoriaNombre,
+        monto: porCat[0].monto,
+        unidades: porCat[0].unidades,
+      }
+    : null
+
+  // Producto top
+  const ranking = rankingProductos(ventas, productos, 1)
+  const topProducto = ranking.length > 0
+    ? {
+        nombre: ranking[0].nombre,
+        monto: ranking[0].monto,
+        unidades: ranking[0].unidades,
+      }
+    : null
+
+  // Stock
+  const stockValorTotal = stock.reduce((acc, { producto, variante }) => {
+    const p = variante.precio ?? producto.precioBase
+    return acc + variante.stock * p
+  }, 0)
+
+  const rotacion = calcularRotacionPrendas(ventas, stock)
+
+  return {
+    totalFacturado,
+    totalDescuentos,
+    totalNeto: totalFacturado,
+    cantidadVentas,
+    unidadesVendidas,
+    ticketPromedio,
+    horaPico: horaPico ? { etiqueta: horaPico.etiqueta, total: horaPico.total, cantidad: horaPico.cantidad } : null,
+    diaPico: diaPico ? { diaNombre: diaPico.diaNombre, total: diaPico.total, cantidad: diaPico.cantidad } : null,
+    medioPagoPrincipal,
+    canalPrincipal,
+    topCategoria,
+    topProducto,
+    stockValorTotal,
+    prendasCriticas: rotacion.totalEstrellas,
+    prendasEstancadas: rotacion.totalEstancadas,
+  }
 }

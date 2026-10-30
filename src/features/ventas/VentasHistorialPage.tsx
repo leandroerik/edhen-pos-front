@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { anularVenta, cancelarPedido, descargarComprobante, listarVentasPaginadas } from '../../api/ventas.api'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { Skeleton, SkeletonRow } from '../../shared/components/Skeleton'
 import { formatPrecio } from '../../shared/format'
 import type { EstadoVenta, Venta } from '../../types/venta'
 import { NOMBRE_MEDIO_PAGO } from '../../shared/constants'
@@ -245,7 +246,7 @@ export function VentasHistorialPage() {
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 max-md:hidden">
           <thead className="bg-gray-50">
             <tr>
@@ -276,13 +277,7 @@ export function VentasHistorialPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {cargando && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
-                  Cargando...
-                </td>
-              </tr>
-            )}
+            {cargando && <SkeletonRow colSpan={8} rows={6} />}
             {!cargando && ventasFiltradas.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
@@ -391,7 +386,16 @@ export function VentasHistorialPage() {
       {/* Mobile: cards */}
       <div className="mt-4 space-y-2 md:hidden">
         {cargando && (
-          <p className="py-6 text-center text-sm text-gray-500">Cargando...</p>
+          <div role="status">
+            <span className="sr-only">Cargando...</span>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-lg border border-gray-200 bg-white p-3">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="mt-2.5 h-4 w-52 max-w-full" />
+                <Skeleton className="mt-2.5 h-4 w-24" />
+              </div>
+            ))}
+          </div>
         )}
         {!cargando && ventasFiltradas.length === 0 && (
           <p className="py-6 text-center text-sm text-gray-500">

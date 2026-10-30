@@ -66,7 +66,7 @@ export function DetalleVentaModal({ venta, onCerrar, onImprimir }: DetalleVentaM
                 {grupo.items.map((d) => (
                   <div key={d.id} className="ml-2 flex items-baseline justify-between text-sm text-gray-600">
                     <span className="min-w-0">
-                      {d.variante.color.nombre}/{d.variante.talla.nombre}
+                      {d.variante.color?.nombre ?? 'Sin color'}/{d.variante.talla?.nombre ?? 'Único'}
                       <span className="ml-1 text-gray-400">×{d.cantidad}</span>
                       {d.descuentoItem > 0 && <span className="ml-1 text-gray-400">· desc. {formatPrecio.format(d.descuentoItem)}</span>}
                     </span>

@@ -70,7 +70,6 @@ export function VentasPage() {
 
   const [catalogo, setCatalogo] = useState<Producto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [mostrarCatalogo, setMostrarCatalogo] = useState(true)
   const [categoriaCatalogo, setCategoriaCatalogo] = useState<number | 'todas'>('todas')
   const [productoExpandidoId, setProductoExpandidoId] = useState<number | null>(null)
 
@@ -89,6 +88,7 @@ export function VentasPage() {
   })
 
   const [descuentoTotal, setDescuentoTotal] = useState('')
+  const [permitirSinStock, setPermitirSinStock] = useState(false)
   const [pagos, setPagos] = useState<PagoLinea[]>([
     { localId: crypto.randomUUID(), medioPago: 'EFECTIVO', monto: '', montoTocado: false },
   ])
@@ -140,7 +140,10 @@ export function VentasPage() {
     let cancelado = false
       buscarVariantesParaVenta(terminoDebounced).then((datos) => {
       if (cancelado) return
-      setResultadoBusqueda({ clave: terminoDebounced, datos: datos.filter((d) => d.variante.color && d.variante.talla) as ResultadoBusqueda[] })
+      setResultadoBusqueda({
+        clave: terminoDebounced,
+        datos: datos as ResultadoBusqueda[],
+      })
     })
     return () => {
       cancelado = true
@@ -227,27 +230,33 @@ export function VentasPage() {
   }, [resultadosMismoProducto])
 
   const catalogoFiltrado = catalogo.filter(
-    (p) => categoriaCatalogo === 'todas' || p.categoria.id === categoriaCatalogo,
+    (p) => categoriaCatalogo === 'todas' || p.categoria?.id === categoriaCatalogo,
   )
+  const productoSelector = catalogoFiltrado.find((p) => p.id === productoExpandidoId) ?? null
 
   const agregarAlCarrito = ({ producto, variante }: ResultadoBusqueda, cantidad = 1) => {
     const disponible = variante.stock - variante.stockReservado
-    if (disponible <= 0) {
+    if (disponible <= 0 && !permitirSinStock) {
       setError(
-        `Sin stock: ${producto.nombre} (${variante.color.nombre}/${variante.talla.nombre})`,
+        `Sin stock: ${producto.nombre} (${variante.color?.nombre ?? 'Sin color'}/${variante.talla?.nombre ?? 'Único'})`,
       )
       return
     }
     if (cantidad <= 0) return
     setError(null)
-    const cantidadAAgregar = Math.min(cantidad, disponible)
+    const cantidadAAgregar = permitirSinStock ? cantidad : Math.min(cantidad, disponible)
 
     setCarrito((actual) => {
       const existente = actual.find((i) => i.varianteId === variante.id)
       if (existente) {
         return actual.map((i) =>
           i.varianteId === variante.id
-            ? { ...i, cantidad: Math.min(i.cantidad + cantidadAAgregar, disponible) }
+            ? {
+                ...i,
+                cantidad: permitirSinStock
+                  ? i.cantidad + cantidadAAgregar
+                  : Math.min(i.cantidad + cantidadAAgregar, disponible),
+              }
             : i,
         )
       }
@@ -288,7 +297,7 @@ export function VentasPage() {
       return
     }
     const encontrados = await buscarVariantesParaVenta(termino)
-    const filtrados = encontrados.filter((d) => d.variante.color && d.variante.talla) as ResultadoBusqueda[]
+    const filtrados = encontrados as ResultadoBusqueda[]
     if (filtrados.length === 1) {
       agregarAlCarrito(filtrados[0])
     } else {
@@ -303,7 +312,13 @@ export function VentasPage() {
       actual
         .map((i) =>
           i.varianteId === varianteId
-            ? { ...i, cantidad: Math.max(0, Math.min(i.disponible, i.cantidad + delta)) }
+            ? {
+                ...i,
+                cantidad: Math.max(
+                  0,
+                  permitirSinStock ? i.cantidad + delta : Math.min(i.disponible, i.cantidad + delta),
+                ),
+              }
             : i,
         )
         .filter((i) => i.cantidad > 0),
@@ -382,8 +397,10 @@ export function VentasPage() {
   const diferencia = totalPagado - total
 
   const puedeCobrar = carrito.length > 0 && totalPagado >= total && !guardando
-  puedeCobrarRef.current = puedeCobrar
-  carritoLengthRef.current = carrito.length
+  useEffect(() => {
+    puedeCobrarRef.current = puedeCobrar
+    carritoLengthRef.current = carrito.length
+  }, [puedeCobrar, carrito.length])
 
   const agregarPago = () => {
     setPagos((actual) => {
@@ -433,6 +450,7 @@ export function VentasPage() {
       })),
       pagos: pagosInput,
       descuentoTotal: descuentoGeneral,
+      permitirStockNegativo: permitirSinStock,
     }
   }
 
@@ -441,6 +459,7 @@ export function VentasPage() {
     setClienteSeleccionado(null)
     setBusquedaCliente('')
     setDescuentoTotal('')
+    setPermitirSinStock(false)
     setPagos([{ localId: crypto.randomUUID(), medioPago: 'EFECTIVO', monto: '', montoTocado: false }])
     busquedaInputRef.current?.focus()
   }
@@ -483,18 +502,31 @@ export function VentasPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Nueva venta</h1>
-        <Link to="/ventas/historial" className="text-sm font-medium text-gray-700 hover:text-gray-900">
-          Ver historial →
-        </Link>
+        <h1 className="text-lg font-semibold text-gray-900">Nueva venta</h1>
+        <div className="flex items-center gap-4">
+          <span className="hidden items-center gap-3 text-[11px] text-gray-400 md:flex">
+            <span>
+              <kbd className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-medium text-gray-500">F2</kbd> buscar
+            </span>
+            <span>
+              <kbd className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-medium text-gray-500">F4</kbd> vender
+            </span>
+            <span>
+              <kbd className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-medium text-gray-500">F1</kbd> nueva venta
+            </span>
+          </span>
+          <Link to="/ventas/historial" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+            Ver historial →
+          </Link>
+        </div>
       </div>
 
       {ultimaVenta && (
-        <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{ultimaVenta}</p>
+        <p className="mt-2 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{ultimaVenta}</p>
       )}
-      {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-6">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-4">
         <div className="flex min-h-0 flex-1 flex-col lg:col-span-2">
           <div className="relative shrink-0">
             <input
@@ -503,7 +535,7 @@ export function VentasPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               onKeyDown={(e) => void handleBusquedaKeyDown(e)}
-              placeholder="Buscar por nombre, SKU o escanear código de barras... (Enter para agregar / cobrar)"
+              placeholder="Buscar por nombre, SKU o escanear código de barras... (Enter para agregar / vender)"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
               autoFocus
             />
@@ -521,6 +553,7 @@ export function VentasPage() {
                     <SelectorColorTalle
                       ref={selectorRef}
                       variantes={resultados.map((r) => r.variante)}
+                      permitirSinStock={permitirSinStock}
                       onConfirmar={(seleccion) => {
                         const producto = resultados[0].producto
                         for (const { variante, cantidad } of seleccion) {
@@ -542,14 +575,19 @@ export function VentasPage() {
                         onClick={() => agregarAlCarrito(r)}
                         className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
                       >
-                        <span>
+                        <span className="min-w-0">
                           {r.producto.nombre}{' '}
                           <span className="text-gray-500">
-                            · {r.variante.color.nombre}/{r.variante.talla.nombre} · {r.variante.sku}
+                            · {r.variante.color?.nombre ?? 'Sin color'}/{r.variante.talla?.nombre ?? 'Único'} · {r.variante.sku}
                           </span>
                         </span>
-                        <span className={disponible <= 0 ? 'text-red-600' : 'text-gray-500'}>
-                          {disponible <= 0 ? 'sin stock' : `stock ${disponible}`}
+                        <span className="flex shrink-0 items-center gap-3">
+                          <span className="font-medium text-gray-900">
+                            {formatPrecio.format(r.variante.precio ?? r.producto.precioBase)}
+                          </span>
+                          <span className={disponible <= 0 ? 'text-red-600' : 'text-gray-500'}>
+                            {disponible <= 0 ? 'sin stock' : `stock ${disponible}`}
+                          </span>
                         </span>
                       </button>
                     )
@@ -558,89 +596,78 @@ export function VentasPage() {
             )}
           </div>
 
-          <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white">
-            <button
-              type="button"
-              onClick={() => setMostrarCatalogo((v) => !v)}
-              className="flex w-full shrink-0 items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-            >
-              Elegir producto sin escáner
-              <span className="text-gray-400">{mostrarCatalogo ? '▴' : '▾'}</span>
-            </button>
-
-            {mostrarCatalogo && (
-              <div className="flex min-h-0 flex-1 flex-col border-t border-gray-100 p-3">
-                <div className="flex flex-wrap gap-1.5 shrink-0">
+          <div className="mt-2 flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white">
+            <div className="flex min-h-0 flex-1 flex-col p-2">
+              <div className="flex flex-wrap gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setCategoriaCatalogo('todas')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    categoriaCatalogo === 'todas'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Todas
+                </button>
+                {categorias.map((c) => (
                   <button
+                    key={c.id}
                     type="button"
-                    onClick={() => setCategoriaCatalogo('todas')}
+                    onClick={() => setCategoriaCatalogo(c.id)}
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      categoriaCatalogo === 'todas'
+                      categoriaCatalogo === c.id
                         ? 'bg-gray-900 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    Todas
+                    {c.nombre}
                   </button>
-                  {categorias.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCategoriaCatalogo(c.id)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        categoriaCatalogo === c.id
-                          ? 'bg-gray-900 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {c.nombre}
-                    </button>
-                  ))}
-                </div>
+                ))}
+              </div>
 
-                <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                    {catalogoFiltrado.map((producto) => {
-                      const expandido = productoExpandidoId === producto.id
-                      return (
-                        <div key={producto.id} className="rounded-md border border-gray-200 p-2">
-                          <button
-                            type="button"
-                            onClick={() => setProductoExpandidoId(expandido ? null : producto.id)}
-                            className="w-full text-left text-sm"
-                          >
-                            <p className="truncate text-gray-900">{producto.nombre}</p>
-                            <p className="text-xs text-gray-500">{formatPrecio.format(producto.precioBase)}</p>
-                          </button>
-
-                          {expandido && (
-                            <div className="mt-2 flex flex-col border-t border-gray-100 pt-2" style={{ minHeight: '120px' }}>
-                              <SelectorColorTalle
-                                variantes={producto.variantes.filter((v) => v.activo && v.color && v.talla) as unknown as VarianteParaSelector[]}
-                                onConfirmar={(seleccion) => {
-                                  for (const { variante, cantidad } of seleccion) {
-                                    agregarAlCarrito({ producto, variante }, cantidad)
-                                  }
-                                  setProductoExpandidoId(null)
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+              <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+                  {catalogoFiltrado.map((producto) => {
+                    const expandido = productoExpandidoId === producto.id
+                    return (
+                      <div key={producto.id} className="rounded-md border border-gray-200 p-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setProductoExpandidoId(expandido ? null : producto.id)}
+                          className="w-full text-left text-sm"
+                        >
+                          <p className="truncate text-gray-900">{producto.nombre}</p>
+                          <p className="text-xs text-gray-500">{formatPrecio.format(producto.precioBase)}</p>
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
         </div>
 
         <div ref={carritoRef} className="flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden shrink-0 lg:shrink lg:sticky lg:top-6 lg:h-fit lg:max-h-[calc(100vh-3rem)]">
           {/* Header */}
-          <div className="shrink-0 border-b border-gray-100 px-4 py-3">
+          <div className="shrink-0 border-b border-gray-100 px-4 py-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">Venta actual</h2>
+            <label
+              className="flex cursor-pointer select-none items-center gap-1.5 text-[11px] text-gray-500"
+              title="Permite registrar la venta aunque la variante quede con stock negativo (ej. prenda que apareció después)"
+            >
+              <input
+                type="checkbox"
+                checked={permitirSinStock}
+                onChange={(e) => setPermitirSinStock(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-gray-300 accent-amber-600"
+              />
+              <span className={permitirSinStock ? 'font-medium text-amber-700' : ''}>
+                Permitir sin stock
+              </span>
+            </label>
           </div>
 
           {/* Contenido scrolleable */}
@@ -709,30 +736,35 @@ export function VentasPage() {
                             >
                               <span
                                 className="h-2 w-2 shrink-0 rounded-full border border-gray-300"
-                                style={{ backgroundColor: item.variante.color.codigoHex }}
+                                style={{ backgroundColor: item.variante.color?.codigoHex ?? '#fff' }}
                               />
                               <span className="text-[11px] text-gray-600 shrink-0 min-w-0 truncate">
-                                {item.variante.color.nombre}/{item.variante.talla.nombre}
+                                {item.variante.color?.nombre ?? 'Sin color'}/{item.variante.talla?.nombre ?? 'Único'}
                               </span>
                               <div className="flex items-center gap-0.5 shrink-0">
                                 <button
                                   type="button"
                                   onClick={() => cambiarCantidadCarrito(item.varianteId, -1)}
                                   disabled={item.cantidad <= 0}
-                                  className="h-4 w-4 rounded border border-gray-300 text-[10px] leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="h-7 w-7 rounded border border-gray-300 text-sm leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   −
                                 </button>
-                                <span className="w-4 text-center text-[11px] font-medium text-gray-900">{item.cantidad}</span>
+                                <span className="w-5 text-center text-xs font-medium text-gray-900">{item.cantidad}</span>
                                 <button
                                   type="button"
                                   onClick={() => cambiarCantidadCarrito(item.varianteId, 1)}
-                                  disabled={item.cantidad >= item.disponible}
-                                  className="h-4 w-4 rounded border border-gray-300 text-[10px] leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                  disabled={!permitirSinStock && item.cantidad >= item.disponible}
+                                  className="h-7 w-7 rounded border border-gray-300 text-sm leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   +
                                 </button>
                               </div>
+                              {permitirSinStock && item.cantidad > item.disponible && (
+                                <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                                  stock: {item.disponible}
+                                </span>
+                              )}
                               <span className="ml-auto text-[11px] font-medium text-gray-900 shrink-0">
                                 {formatPrecio.format(item.cantidad * item.precioUnitario)}
                               </span>
@@ -836,13 +868,18 @@ export function VentasPage() {
                       )}
                     </div>
                     {clienteSeleccionado && !clienteSeleccionado.esGenerico && (
-                      <button
-                        type="button"
-                        onClick={() => setClienteSeleccionado(null)}
-                        className="shrink-0 text-[10px] text-red-600 hover:text-red-800"
-                      >
-                        ✕
-                      </button>
+                      <span className="flex min-w-0 shrink-0 items-center gap-1 text-[11px] font-medium text-gray-900">
+                        <span className="max-w-[9rem] truncate">
+                          {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setClienteSeleccionado(null)}
+                          className="shrink-0 text-[10px] text-red-600 hover:text-red-800"
+                        >
+                          ✕
+                        </button>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -913,13 +950,17 @@ export function VentasPage() {
                       </div>
                     ))}
                   </div>
-                  <p className={`mt-1.5 text-[11px] ${diferencia < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                    {diferencia < 0
-                      ? `Falta ${formatPrecio.format(-diferencia)}`
-                      : diferencia > 0
-                        ? `Vuelto ${formatPrecio.format(diferencia)}`
-                        : 'Pagos completos'}
-                  </p>
+                  {diferencia < 0 ? (
+                    <p className="mt-1.5 text-sm font-semibold text-red-600">
+                      Falta {formatPrecio.format(-diferencia)}
+                    </p>
+                  ) : diferencia > 0 ? (
+                    <p className="mt-1.5 text-base font-bold text-green-700">
+                      Vuelto {formatPrecio.format(diferencia)}
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-[11px] text-gray-500">Pagos completos</p>
+                  )}
                 </div>
               </>
             )}
@@ -938,18 +979,18 @@ export function VentasPage() {
                   <dd>-{formatPrecio.format(descuentoItems + descuentoGeneral)}</dd>
                 </div>
               )}
-              <div className="flex justify-between text-base font-semibold text-gray-900">
-                <dt>Total</dt>
-                <dd>{formatPrecio.format(total)}</dd>
+              <div className="flex justify-between text-gray-900">
+                <dt className="text-sm font-medium text-gray-500">Total</dt>
+                <dd className="text-2xl font-bold tabular-nums">{formatPrecio.format(total)}</dd>
               </div>
             </dl>
             <button
               type="button"
               onClick={() => setMostrarConfirmacion(true)}
               disabled={!puedeCobrar}
-              className="w-full rounded-md bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-md bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {guardando ? 'Cobrando...' : 'Cobrar'}
+              {guardando ? 'Vendiendo...' : `Vender ${formatPrecio.format(total)}`}
             </button>
             <button
               type="button"
@@ -980,24 +1021,79 @@ export function VentasPage() {
         </div>
       )}
 
+      {productoSelector && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setProductoExpandidoId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-gray-900">{productoSelector.nombre}</p>
+                <p className="text-xs text-gray-500">{formatPrecio.format(productoSelector.precioBase)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProductoExpandidoId(null)}
+                className="shrink-0 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <SelectorColorTalle
+              variantes={
+                productoSelector.variantes.filter((v) => v.activo && v.color && v.talla) as unknown as VarianteParaSelector[]
+              }
+              permitirSinStock={permitirSinStock}
+              onConfirmar={(seleccion) => {
+                for (const { variante, cantidad } of seleccion) {
+                  agregarAlCarrito({ producto: productoSelector, variante }, cantidad)
+                }
+                setProductoExpandidoId(null)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {mostrarConfirmacion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="mx-4 w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <h2 className="text-base font-semibold text-gray-900">Confirmar venta</h2>
 
-            <div className="mt-3 max-h-60 space-y-1 overflow-y-auto">
+            <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
               {carritoAgrupado.map((grupo) => {
                 const sub = grupo.items.reduce(
                   (acc, i) => acc + i.cantidad * i.precioUnitario - (Number(i.descuentoItem) || 0),
                   0,
                 )
+                const totalUnidades = grupo.items.reduce((acc, i) => acc + i.cantidad, 0)
                 return (
-                  <div key={grupo.producto.id} className="flex items-baseline justify-between text-sm">
-                    <span className="text-gray-700">
-                      {grupo.producto.nombre}
-                      {grupo.items.length > 1 ? ` (${grupo.items.length} vars)` : ''}
-                    </span>
-                    <span className="font-medium text-gray-900">{formatPrecio.format(sub)}</span>
+                  <div key={grupo.producto.id} className="text-sm">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-gray-700">
+                        {grupo.producto.nombre}
+                        <span className="ml-1 text-xs text-gray-400">×{totalUnidades}</span>
+                      </span>
+                      <span className="font-medium text-gray-900">{formatPrecio.format(sub)}</span>
+                    </div>
+                    {grupo.items.map((i) => (
+                      <div
+                        key={i.varianteId}
+                        className="ml-3 flex items-baseline justify-between text-xs text-gray-500"
+                      >
+                        <span>
+                          {i.variante.color?.nombre ?? 'Sin color'}/{i.variante.talla?.nombre ?? 'Único'} ×{i.cantidad}
+                        </span>
+                        <span>
+                          {formatPrecio.format(i.cantidad * i.precioUnitario - (Number(i.descuentoItem) || 0))}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )
               })}
@@ -1066,9 +1162,9 @@ export function VentasPage() {
                   if (ok) setMostrarConfirmacion(false)
                 }}
                 disabled={guardando}
-                className="flex-1 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {guardando ? 'Cobrando...' : 'Confirmar'}
+                {guardando ? 'Vendiendo...' : `Confirmar venta ${formatPrecio.format(total)}`}
               </button>
             </div>
           </div>

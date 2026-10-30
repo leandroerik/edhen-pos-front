@@ -4,7 +4,7 @@ import type { Talla } from './talla'
 
 export interface Producto {
   id: number
-  categoria: Categoria
+  categoria: Categoria | null
   codigoBarras?: string
   nombre: string
   descripcion?: string

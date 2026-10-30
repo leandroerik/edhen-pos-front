@@ -145,9 +145,9 @@ export function CompletarPagoModal({
           type="button"
           onClick={handleSubmit}
           disabled={guardando || totalNuevo <= 0}
-          className="mt-3 w-full rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-3 w-full rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {guardando ? 'Guardando...' : 'Registrar pago'}
+          {guardando ? 'Guardando...' : `Registrar pago ${formatPrecio.format(totalNuevo)}`}
         </button>
       </div>
     </div>

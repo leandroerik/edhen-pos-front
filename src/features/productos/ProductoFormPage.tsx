@@ -1,16 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { crearColor, crearTalla, type TallaInput } from '../../api/catalogos.api'
 import {
   crearProductoConVariantes,
+  crearVariante,
   editarProducto,
   editarVariante,
   obtenerProducto,
   type ProductoInput,
 } from '../../api/productos.api'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { PageSkeleton } from '../../shared/components/Skeleton'
 import { VariantesEditor } from './components/VariantesEditor'
 import { CategoriasModal } from './components/CategoriasModal'
+import { TallesColoresModal } from './components/TallesColoresModal'
 import { useCatalogos } from '../../shared/hooks/useCatalogos'
 import type { VarianteDraft } from './lib/varianteDraft'
 
@@ -23,17 +26,19 @@ export function ProductoFormPage() {
     useCatalogos()
 
   const [nombre, setNombre] = useState('')
-  const [categoriaId, setCategoriaId] = useState<number | null>(null)
+  const [categoriaId, setCategoriaId] = useState<number>(-1) // -1 = sin categoría
   const [descripcion, setDescripcion] = useState('')
   const [precioBase, setPrecioBase] = useState('')
   const [codigoBarras, setCodigoBarras] = useState('')
   const [imagenUrl, setImagenUrl] = useState('')
+  const [imagenRota, setImagenRota] = useState(false)
   const [variantes, setVariantes] = useState<VarianteDraft[]>([])
 
   const [productoCargando, setProductoCargando] = useState(esEdicion)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modalCategoriasAbierto, setModalCategoriasAbierto] = useState(false)
+  const [modalCatalogosAbierto, setModalCatalogosAbierto] = useState(false)
   const [modalSalirAbierto, setModalSalirAbierto] = useState(false)
   const [ dirty, setDirty ] = useState(false)
 
@@ -43,7 +48,7 @@ export function ProductoFormPage() {
     obtenerProducto(Number(id)).then((producto) => {
       if (cancelado || !producto) return
       setNombre(producto.nombre)
-      setCategoriaId(producto.categoria.id)
+      setCategoriaId(producto.categoria?.id ?? -1)
       setDescripcion(producto.descripcion ?? '')
       setPrecioBase(String(producto.precioBase))
       setCodigoBarras(producto.codigoBarras ?? '')
@@ -52,16 +57,16 @@ export function ProductoFormPage() {
         producto.variantes.map((v) => ({
           localId: crypto.randomUUID(),
           id: v.id,
-          colorId: v.color?.id ?? 'otro',
+          colorId: v.color?.id ?? 'sin-color',
           colorNombreNuevo: '',
           colorHexNuevo: '#000000',
           tallaId: v.talla?.id ?? 'otro',
           tallaNombreNueva: '',
           tallaTipoNueva: 'ROPA',
           codigoBarras: v.codigoBarras ?? '',
-          precio: v.precio !== undefined ? String(v.precio) : '',
-          stock: String(v.stock),
-          stockMinimo: String(v.stockMinimo),
+          precio: v.precio != null && !Number.isNaN(Number(v.precio)) ? String(v.precio) : '',
+          stock: String(v.stock ?? 0),
+          stockMinimo: String(v.stockMinimo ?? 0),
           stockMinimoTocado: true,
           activo: v.activo,
         })),
@@ -84,18 +89,52 @@ export function ProductoFormPage() {
 
   const markDirty = () => { if (!dirty) setDirty(true) }
 
+  // Refresca el catálogo y descarta los borradores que quedaron apuntando a un
+  // talle/color que se acaba de eliminar desde "Gestionar talles y colores".
+  // Sin esto, el <select> de la variante quedaría con un id que ya no existe
+  // (muestra el primero de la lista pero guarda el viejo) y al grabar enviaría
+  // una referencia inexistente.
+  const refrescarCatalogosYLimpiar = async () => {
+    const datos = await recargarCatalogos()
+    const tallaIds = new Set(datos.tallas.map((t) => t.id))
+    const colorIds = new Set(datos.colores.map((c) => c.id))
+    setVariantes((actuales) =>
+      actuales.filter(
+        (v) =>
+          (v.tallaId === 'otro' || tallaIds.has(v.tallaId)) &&
+          (v.colorId === 'otro' || v.colorId === 'sin-color' || colorIds.has(v.colorId)),
+      ),
+    )
+  }
+
+  // En el alta solo se ofrecen categorías activas: ofrecer una inactiva invita a crear
+  // el producto en algo que después no aparece en los listados.
+  //
+  // Al editar hay un caso trampa: si el producto ya está en una categoría que
+  // después se desactivó, esa categoría tiene que seguir apareciendo (marcada
+  // como inactiva). Si se la saca de las <option>, el <select> queda apuntando a un
+  // valor que no existe en la lista: el navegador muestra la primera opción pero el
+  // estado `categoriaId` sigue teniendo el id viejo, así que la pantalla miente y al
+  // guardar se manda una categoría distinta de la que se ve.
+  const categoriasVisibles = useMemo(() => {
+    const activas = categorias.filter((c) => c.activo !== false)
+    const actual = categorias.find((c) => c.id === categoriaId)
+    if (categoriaId >= 0 && actual && actual.activo === false) {
+      return [...activas, actual]
+    }
+    return activas
+  }, [categorias, categoriaId])
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 
-    const catId = categoriaId ?? categorias[0]?.id
-    if (!catId) return
-
     const productoInput: ProductoInput = {
-      categoriaId: catId,
+      categoriaId: categoriaId >= 0 ? categoriaId : undefined,
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || undefined,
       precioBase: Number(precioBase),
+      codigoBarras: codigoBarras.trim() || undefined,
       imagenUrl: imagenUrl.trim() || undefined,
     }
 
@@ -112,7 +151,6 @@ export function ProductoFormPage() {
         const coloresNuevos = new Map<string, { nombre: string; codigoHex: string }>()
         const tallasNuevas = new Map<string, TallaInput>()
         for (const draft of variantes) {
-          if (draft.id === undefined) continue
           if (draft.colorId === 'otro' && draft.colorNombreNuevo.trim()) {
             coloresNuevos.set(draft.colorNombreNuevo.trim(), {
               nombre: draft.colorNombreNuevo.trim(),
@@ -140,9 +178,8 @@ export function ProductoFormPage() {
           }),
         ])
 
-        const variantesAEditar: Promise<unknown>[] = []
+        const operacionesVariantes: Promise<unknown>[] = []
         for (const draft of variantes) {
-          if (draft.id === undefined) continue
           const color =
             draft.colorId === 'otro'
               ? coloresCreados.get(draft.colorNombreNuevo.trim())
@@ -151,19 +188,39 @@ export function ProductoFormPage() {
             draft.tallaId === 'otro'
               ? tallasCreadas.get(draft.tallaNombreNueva.trim())
               : tallas.find((t) => t.id === draft.tallaId)
-          if (!color || !talla) continue
-          variantesAEditar.push(
-            editarVariante(draft.id, {
-              colorId: color.id,
-              tallaId: talla.id,
-              codigoBarras: draft.codigoBarras.trim() || undefined,
-              precio: draft.precio ? Number(draft.precio) : Number(precioBase) || 1,
-              stockMinimo: Number(draft.stockMinimo) || 0,
-              activo: draft.activo,
-            }),
-          )
+
+          const colorId = color?.id ?? (typeof draft.colorId === 'number' ? draft.colorId : undefined)
+          const tallaId = talla?.id ?? (typeof draft.tallaId === 'number' ? draft.tallaId : undefined)
+
+          const pDraft = Number(draft.precio)
+          const pBase = Number(precioBase)
+          const precioFinal = !isNaN(pDraft) && pDraft > 0 ? pDraft : (!isNaN(pBase) && pBase > 0 ? pBase : 1)
+
+          if (draft.id !== undefined) {
+            operacionesVariantes.push(
+              editarVariante(draft.id, {
+                colorId,
+                tallaId,
+                codigoBarras: draft.codigoBarras.trim() || undefined,
+                precio: precioFinal,
+                stockMinimo: Number(draft.stockMinimo) || 0,
+                activo: draft.activo,
+              }),
+            )
+          } else {
+            operacionesVariantes.push(
+              crearVariante(Number(id), {
+                colorId,
+                tallaId,
+                codigoBarras: draft.codigoBarras.trim() || undefined,
+                precio: precioFinal,
+                stock: Number(draft.stock) || 0,
+                stockMinimo: Number(draft.stockMinimo) || 0,
+              }),
+            )
+          }
         }
-        await Promise.all(variantesAEditar)
+        await Promise.all(operacionesVariantes)
       } else {
         const coloresNuevos = new Map<string, { nombre: string; codigoHex: string }>()
         const tallasNuevas = new Map<string, TallaInput>()
@@ -198,6 +255,7 @@ export function ProductoFormPage() {
         const variantesInput: Array<{
           colorId?: number
           tallaId?: number
+          codigoBarras?: string
           precio: number
           stock: number
           stockMinimo: number
@@ -212,12 +270,19 @@ export function ProductoFormPage() {
             draft.tallaId === 'otro'
               ? tallasCreadas.get(draft.tallaNombreNueva.trim())
               : tallas.find((t) => t.id === draft.tallaId)
-          if (!color || !talla) continue
+
+          const colorId = color?.id ?? (typeof draft.colorId === 'number' ? draft.colorId : undefined)
+          const tallaId = talla?.id ?? (typeof draft.tallaId === 'number' ? draft.tallaId : undefined)
+
+          const pDraft = Number(draft.precio)
+          const pBase = Number(precioBase)
+          const precioFinal = !isNaN(pDraft) && pDraft > 0 ? pDraft : (!isNaN(pBase) && pBase > 0 ? pBase : 1)
 
           variantesInput.push({
-            colorId: color.id,
-            tallaId: talla.id,
-            precio: draft.precio ? Number(draft.precio) : Number(precioBase) || 1,
+            colorId,
+            tallaId,
+            codigoBarras: draft.codigoBarras.trim() || undefined,
+            precio: precioFinal,
             stock: Number(draft.stock) || 0,
             stockMinimo: Number(draft.stockMinimo) || 0,
           })
@@ -239,7 +304,7 @@ export function ProductoFormPage() {
   }
 
   if (catalogosCargando || productoCargando) {
-    return <p className="text-sm text-gray-500">Cargando...</p>
+    return <PageSkeleton />
   }
 
   return (
@@ -256,88 +321,126 @@ export function ProductoFormPage() {
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-6 max-w-3xl space-y-6">
+      <form onSubmit={handleSubmit} className="mt-6 max-w-4xl space-y-6">
         {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-        <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2">
-          <label className="text-sm text-gray-700">
-            Nombre
-            <input
-              type="text"
-              value={nombre}
-              onChange={(e) => { setNombre(e.target.value); markDirty() }}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-              required
-            />
-          </label>
+        <section className="rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-gray-900">Datos del producto</h2>
 
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-gray-700">Categoría</label>
-              <button
-                type="button"
-                onClick={() => setModalCategoriasAbierto(true)}
-                className="text-xs font-medium text-gray-700 hover:text-gray-900"
-              >
-                + Gestionar categorías
-              </button>
-            </div>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="text-sm text-gray-700">
+              Nombre <span className="text-red-500">*</span>
+              <input
+                type="text"
+                value={nombre}
+                onChange={(e) => { setNombre(e.target.value); markDirty() }}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                required
+              />
+            </label>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-gray-700">
+                  Categoría{' '}
+                  <span className="text-xs font-normal text-gray-400">(opcional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setModalCategoriasAbierto(true)}
+                  className="text-xs font-medium text-gray-700 hover:text-gray-900"
+                >
+                  + Gestionar categorías
+                </button>
+              </div>
             <select
-              value={categoriaId ?? categorias[0]?.id ?? ''}
+              value={categoriaId}
               onChange={(e) => { setCategoriaId(Number(e.target.value)); markDirty() }}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             >
-              {categorias.map((c) => (
+              <option value={-1}>Sin categoría</option>
+              {categoriasVisibles.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nombre} {c.activo === false ? '(Inactiva)' : ''}
                 </option>
               ))}
             </select>
+            </div>
+
+            <label className="text-sm text-gray-700">
+              Precio base <span className="text-red-500">*</span>
+              <input
+                type="number"
+                min="0"
+                value={precioBase}
+                onChange={(e) => { setPrecioBase(e.target.value); markDirty() }}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                required
+              />
+            </label>
+
+            <label className="text-sm text-gray-700">
+              URL de imagen
+              <input
+                type="text"
+                value={imagenUrl}
+                onChange={(e) => { setImagenUrl(e.target.value); setImagenRota(false); markDirty() }}
+                placeholder="https://..."
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              />
+            </label>
+
+            <label className="text-sm text-gray-700 sm:col-span-2">
+              Descripción
+              <textarea
+                value={descripcion}
+                onChange={(e) => { setDescripcion(e.target.value); markDirty() }}
+                rows={2}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              />
+            </label>
+
+            {imagenUrl.trim() && (
+              <div className="sm:col-span-2">
+                <p className="text-xs text-gray-500">Vista previa</p>
+                <div className="mt-1 flex h-40 w-40 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+                  {imagenRota ? (
+                    <span className="px-2 text-center text-xs text-gray-400">
+                      No se pudo cargar la imagen
+                    </span>
+                  ) : (
+                    <img
+                      src={imagenUrl}
+                      alt="Vista previa del producto"
+                      onError={() => setImagenRota(true)}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+        </section>
 
-          <label className="text-sm text-gray-700 sm:col-span-2">
-            Descripción
-            <textarea
-              value={descripcion}
-              onChange={(e) => { setDescripcion(e.target.value); markDirty() }}
-              rows={2}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+        <section className="rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-gray-900">Variantes (color / talla)</h2>
+          <div className="mt-3">
+            <VariantesEditor
+              variantes={variantes}
+              onChange={(v) => { setVariantes(v); markDirty() }}
+              colores={colores}
+              tallas={tallas}
+              precioBase={Number(precioBase) || 0}
+              onGestionarCatalogos={() => setModalCatalogosAbierto(true)}
             />
-          </label>
+          </div>
+        </section>
 
-          <label className="text-sm text-gray-700">
-            Precio base
-            <input
-              type="number"
-              min="0"
-              value={precioBase}
-              onChange={(e) => { setPrecioBase(e.target.value); markDirty() }}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-              required
-            />
-          </label>
-
-          <label className="text-sm text-gray-700 sm:col-span-2">
-            URL de imagen
-            <input
-              type="text"
-              value={imagenUrl}
-              onChange={(e) => { setImagenUrl(e.target.value); markDirty() }}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-            />
-          </label>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <VariantesEditor
-            variantes={variantes}
-            onChange={(v) => { setVariantes(v); markDirty() }}
-            colores={colores}
-            tallas={tallas}
-            precioBase={Number(precioBase) || 0}
-            onCatalogoActualizado={recargarCatalogos}
-          />
-        </div>
+        {variantes.length === 0 && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Este producto todavía no tiene variantes. Sin variantes no se le puede cargar stock.
+          </p>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -364,6 +467,12 @@ export function ProductoFormPage() {
         abierto={modalCategoriasAbierto}
         onCerrar={() => setModalCategoriasAbierto(false)}
         onActualizado={recargarCatalogos}
+      />
+
+      <TallesColoresModal
+        abierto={modalCatalogosAbierto}
+        onCerrar={() => setModalCatalogosAbierto(false)}
+        onActualizado={refrescarCatalogosYLimpiar}
       />
 
       <ConfirmModal

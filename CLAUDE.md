@@ -1,31 +1,61 @@
-# edhen-pos-front
+# CLAUDE.md — Guía Técnica para edhen-pos-front
 
-Frontend del sistema de punto de venta para tienda de ropa (edhen POS).
-Repo hermano: edhen-pos-back (API REST separada).
+Frontend SPA del sistema de punto de venta (edhen POS) para tienda de indumentaria.
+Repo hermano: `edhen-pos-back` (API REST Spring Boot).
 
-## Contexto del proyecto
-Este frontend consume la API documentada en edhen-pos-back. El contrato de
-endpoints está descripto en docs/03-funcionalidades-y-casos-especiales.md
-(copiar esa carpeta docs/ a este repo también, o referenciarla como submódulo).
+---
 
-## Stack
-- React 19 + Vite 8 + TypeScript
-- TailwindCSS v4 para estilos
-- react-router-dom para ruteo
-- axios para llamadas HTTP
+## 🚀 Comandos Rápidos
 
-## Convenciones
-- Organización por FEATURE (src/features/<dominio>), no por tipo de archivo
-- Todo llamado HTTP pasa por src/api/<dominio>.api.ts, nunca fetch/axios
-  directo dentro de un componente
-- La URL del backend siempre sale de import.meta.env.VITE_API_URL, nunca
-  hardcodeada
-- Tipos compartidos (Producto, Venta, VarianteProducto, etc.) van en
-  src/types/, reflejando exactamente las entidades del backend
-- Componentes de un solo feature no se importan desde otro feature
-  directamente — si hace falta compartir, se sube a src/shared/
+```bash
+# Instalar dependencias
+npm install
 
-## Backend
-Corre en http://localhost:8080 en desarrollo (Spring Boot, repo aparte).
-Asegurarse de que el backend tenga CORS habilitado para
-http://localhost:5173 antes de probar integraciones.
+# Levantar servidor de desarrollo (puerto 5173)
+npm run dev
+
+# Chequeo estricto de tipos TypeScript
+npx tsc --noEmit
+
+# Linting
+npx eslint src/
+
+# Compilación para producción
+npm run build
+```
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **React 19** + **TypeScript** + **Vite 8**
+- **TailwindCSS v4** para estilos utilitarios
+- **React Router 7** para ruteo
+- **Axios** para cliente HTTP con interceptores
+- **Lucide Icons** para iconografía
+
+---
+
+## 🏛️ Convenciones de Arquitectura
+
+1. **Organización por Feature (`src/features/<dominio>`)**:
+   - `inicio/`: Dashboard principal y métricas rápidas.
+   - `productos/`: Catálogo, formulario de creación con variantes, detalle y cola de impresión de etiquetas.
+   - `ventas/`: Terminal POS con carrito dividido en 3 zonas fijas e historial de ventas.
+   - `stock/`: Vista agrupada y plana de inventario con modal de ajuste.
+   - `clientes/`: Listado y formulario de clientes mayoristas/minoristas y domicilios.
+   - `envios/`: Panel logístico y detalle de despachos.
+   - `reportes/`: Visualización de métricas y gráficos de ventas.
+   - `configuracion/`: Gestión de Backups, Importación CSV y Datos de la tienda.
+
+2. **Capa API Centralizada (`src/api/<dominio>.api.ts`)**:
+   - Todo llamado HTTP se realiza mediante funciones exportadas en la capa API.
+   - Nunca utilizar `axios`/`fetch` directamente dentro de un componente o hook.
+   - La URL base se obtiene de `import.meta.env.VITE_API_URL` (por defecto `http://localhost:8080`).
+
+3. **Tipos e Interfaces (`src/types/`)**:
+   - Modelos compartidos (`Producto`, `Venta`, `Cliente`, `Variante`, etc.) reflejan exactamente los contratos del backend.
+
+4. **Componentes Compartidos (`src/shared/`)**:
+   - Componentes transversales (`Modal`, `ConfirmModal`, `EmptyState`, `ErrorBoundary`, `MainLayout`, `Sidebar`, `Button`, `Input`) residen en `src/shared/`.
+   - Prohibido importar componentes de un feature desde otro feature directamente.

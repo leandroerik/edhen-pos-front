@@ -9,7 +9,7 @@ export interface ProductosFiltro {
 }
 
 export interface ProductoInput {
-  categoriaId: number
+  categoriaId?: number
   codigoBarras?: string
   nombre: string
   descripcion?: string
@@ -93,6 +93,13 @@ export async function eliminarProducto(id: number): Promise<void> {
 
 export async function reactivarProducto(id: number): Promise<void> {
   await apiClient.put(`/api/productos/${id}/reactivar`)
+}
+
+export async function cambiarActivoProducto(id: number, activo: boolean): Promise<Producto> {
+  const res = await apiClient.put<Producto>(`/api/productos/${id}/activo`, null, {
+    params: { activo },
+  })
+  return res.data
 }
 
 export async function crearVariante(

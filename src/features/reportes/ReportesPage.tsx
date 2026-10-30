@@ -12,8 +12,11 @@ import {
   ComparacionPeriodosControl,
 } from './components/ComparacionPeriodosCard'
 import { EnviosReporteCard } from './components/EnviosReporteCard'
+import { HorariosPicoCard } from './components/HorariosPicoCard'
 import { ProductosMasVendidosCard } from './components/ProductosMasVendidosCard'
+import { ResumenEjecutivoModal } from './components/ResumenEjecutivoModal'
 import { ResumenVentasCard } from './components/ResumenVentasCard'
+import { RotacionPrendasCard } from './components/RotacionPrendasCard'
 import { SelectorRangoFechas } from './components/SelectorRangoFechas'
 import { StockReporteCard } from './components/StockReporteCard'
 import { VentasPorCategoriaCard } from './components/VentasPorCategoriaCard'
@@ -51,6 +54,7 @@ type Tab = 'periodo' | 'comparar'
 
 export function ReportesPage() {
   const [tab, setTab] = useState<Tab>('periodo')
+  const [mostrarModalEjecutivo, setMostrarModalEjecutivo] = useState(false)
 
   // Período único
   const [desde, setDesde] = useState(() => toInputDate(diasAtras(6)))
@@ -171,8 +175,21 @@ export function ReportesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Reportes</h1>
+      {/* Header principal */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Reportes y Estadísticas</h1>
+          <p className="text-xs text-gray-500">
+            Análisis financiero, horarios de mayor facturación y rotación de prendas.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMostrarModalEjecutivo(true)}
+          className="flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-gray-800"
+        >
+          <span>📄 Informe Ejecutivo (Imprimir / PDF)</span>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -227,7 +244,7 @@ export function ReportesPage() {
         )}
       </div>
 
-      {/* Contenido */}
+      {/* Contenido de Reportes */}
       {cargando ? (
         <div className="mt-6 space-y-4">
           {[1, 2, 3].map((i) => (
@@ -239,20 +256,31 @@ export function ReportesPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          {/* Sección Ventas */}
+          {/* Sección 1: Resumen General de Ventas */}
           {tab === 'periodo' ? (
             <>
               <ResumenVentasCard ventas={ventas} />
+              
+              {/* Horarios Pico y Días de Mayor Facturación */}
+              <HorariosPicoCard ventas={ventas} />
+
+              {/* Rotación de Ropa: Prendas Estrella y Estancadas */}
+              <RotacionPrendasCard ventas={ventas} stock={stock} />
+
               <VentasPorPeriodoCard ventas={ventas} />
+
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <VentasPorCategoriaCard ventas={ventas} productos={productos} />
                 <ProductosMasVendidosCard ventas={ventas} productos={productos} />
               </div>
+
               <VentasPorVarianteCard ventas={ventas} />
             </>
           ) : (
             <>
               <ComparacionPeriodosCard ventasA={ventasA} ventasB={ventasB} />
+              <HorariosPicoCard ventas={ventasA} />
+              <RotacionPrendasCard ventas={ventasA} stock={stock} />
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <VentasPorCategoriaCard ventas={ventasA} productos={productos} />
                 <ProductosMasVendidosCard ventas={ventasA} productos={productos} />
@@ -268,6 +296,17 @@ export function ReportesPage() {
           <StockReporteCard stock={stock} />
         </div>
       )}
+
+      {/* Modal de Resumen Ejecutivo Imprimible */}
+      <ResumenEjecutivoModal
+        abierto={mostrarModalEjecutivo}
+        desde={tab === 'periodo' ? desde : desdeA}
+        hasta={tab === 'periodo' ? hasta : hastaA}
+        ventas={tab === 'periodo' ? ventas : ventasA}
+        productos={productos}
+        stock={stock}
+        onCerrar={() => setMostrarModalEjecutivo(false)}
+      />
     </div>
   )
 }

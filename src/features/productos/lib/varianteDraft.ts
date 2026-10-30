@@ -4,7 +4,7 @@ import type { Talla, TallaTipo } from '../../../types/talla'
 export interface VarianteDraft {
   localId: string
   id?: number
-  colorId: number | 'otro'
+  colorId: number | 'otro' | 'sin-color'
   colorNombreNuevo: string
   colorHexNuevo: string
   tallaId: number | 'otro'

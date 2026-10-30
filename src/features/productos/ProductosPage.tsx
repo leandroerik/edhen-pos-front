@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { SkeletonRow } from '../../shared/components/Skeleton'
 import { formatPrecio } from '../../shared/format'
 import { useDebounce } from '../../shared/hooks/useDebounce'
 import { CategoriasModal } from './components/CategoriasModal'
@@ -143,8 +144,8 @@ export function ProductosPage() {
         <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errorBaja}</p>
       )}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="w-full table-fixed divide-y divide-gray-200">
+      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <table className="w-full min-w-[800px] table-fixed divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="w-[35%] px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -156,10 +157,10 @@ export function ProductosPage() {
               <th className="w-[12%] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Precio
               </th>
-              <th className="w-[10%] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="w-[10%] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Var.
               </th>
-              <th className="w-[10%] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="w-[10%] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Stock
               </th>
               <th className="w-[10%] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -170,11 +171,7 @@ export function ProductosPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {cargando ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
-                  Cargando productos...
-                </td>
-              </tr>
+              <SkeletonRow colSpan={7} rows={6} />
             ) : productos.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
@@ -187,7 +184,12 @@ export function ProductosPage() {
                 const totalReservado = p.variantes.reduce((acc, v) => acc + v.stockReservado, 0)
 
                 return (
-                  <tr key={p.id} className={!p.activo ? 'bg-gray-50 text-gray-400' : undefined}>
+                  <tr
+                    key={p.id}
+                    className={
+                      p.activo ? 'hover:bg-gray-50' : 'bg-gray-50 text-gray-400'
+                    }
+                  >
                     <td className="px-4 py-2.5">
                       <Link
                         to={`/productos/${p.id}`}
@@ -197,14 +199,14 @@ export function ProductosPage() {
                         {p.nombre}
                       </Link>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">{p.categoria.nombre}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-500">{p.categoria?.nombre ?? 'Sin categoría'}</td>
                     <td className="px-4 py-2.5 text-right text-sm font-medium text-gray-900">
                       {formatPrecio.format(p.precioBase)}
                     </td>
-                    <td className="px-4 py-2.5 text-center text-sm text-gray-600">
+                    <td className="px-4 py-2.5 text-right text-sm tabular-nums text-gray-600">
                       {p.variantes.length}
                     </td>
-                    <td className="px-4 py-2.5 text-center text-sm">
+                    <td className="px-4 py-2.5 text-right text-sm tabular-nums">
                       <span className="font-medium text-gray-900">{totalStock}</span>
                       {totalReservado > 0 && (
                         <span className="ml-0.5 text-[10px] text-amber-600">+{totalReservado}</span>

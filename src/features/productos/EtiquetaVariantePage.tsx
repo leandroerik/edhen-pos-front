@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { obtenerProducto } from '../../api/productos.api'
+import { PageSkeleton } from '../../shared/components/Skeleton'
 import { CodigoBarras } from './components/CodigoBarras'
 import type { Producto, ProductoVariante } from '../../types/producto'
 
@@ -22,7 +23,7 @@ export function EtiquetaVariantePage() {
   }, [id])
 
   if (cargando) {
-    return <p className="text-sm text-gray-500">Cargando...</p>
+    return <PageSkeleton />
   }
 
   const variante: ProductoVariante | undefined = producto?.variantes.find(

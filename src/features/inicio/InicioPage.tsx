@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { listarEnvios } from '../../api/envios.api'
 import { listarStock } from '../../api/stock.api'
 import { listarVentas } from '../../api/ventas.api'
+import { Skeleton } from '../../shared/components/Skeleton'
 import type { MedioPago } from '../../types/venta'
 import { PanoramaHoy } from './components/PanoramaHoy'
 import { ProductosMasVendidos, type ProductoVendido } from './components/ProductosMasVendidos'
@@ -55,7 +56,7 @@ interface Resumen {
 }
 
 const ACCESOS_RAPIDOS = [
-  { to: '/ventas', titulo: 'Nueva venta', descripcion: 'Cobrar en el mostrador' },
+  { to: '/ventas', titulo: 'Nueva venta', descripcion: 'Vender en el mostrador' },
   { to: '/productos/nuevo', titulo: 'Agregar producto', descripcion: 'Alta con variantes' },
   { to: '/clientes/nuevo', titulo: 'Nuevo cliente', descripcion: 'Cargar datos y dirección' },
   { to: '/envios/nuevo', titulo: 'Preparar envío', descripcion: 'Desde un pedido pendiente' },
@@ -183,8 +184,11 @@ export function InicioPage() {
       <h2 className="mt-6 text-sm font-semibold text-gray-900">Panorama de hoy</h2>
       <div className="mt-2">
         {resumen === null ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-5 text-sm text-gray-500">
-            Cargando...
+          <div className="rounded-lg border border-gray-200 bg-white p-5">
+            <span className="sr-only">Cargando...</span>
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="mt-4 h-10 w-56" />
+            <Skeleton className="mt-4 h-4 w-72 max-w-full" />
           </div>
         ) : (
           <PanoramaHoy
@@ -243,11 +247,20 @@ export function InicioPage() {
       <div className="mt-2 grid grid-cols-1 gap-3 lg:grid-cols-2">
         {resumen === null ? (
           <>
-            <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500">
-              Cargando...
+            <div className="h-56 rounded-lg border border-gray-200 bg-white p-4">
+              <span className="sr-only">Cargando...</span>
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="mt-5 h-40 w-full" />
             </div>
-            <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500">
-              Cargando...
+            <div className="h-56 rounded-lg border border-gray-200 bg-white p-4">
+              <span className="sr-only">Cargando...</span>
+              <Skeleton className="h-4 w-44" />
+              <div className="mt-5 space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/6" />
+                <Skeleton className="h-4 w-3/6" />
+              </div>
             </div>
           </>
         ) : (

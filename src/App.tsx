@@ -1,6 +1,7 @@
 import { Route, BrowserRouter, Routes } from 'react-router-dom'
 import { ClienteFormPage } from './features/clientes/ClienteFormPage'
 import { ClientesPage } from './features/clientes/ClientesPage'
+import { ConfiguracionPage } from './features/configuracion/ConfiguracionPage'
 import { EnvioDetallePage } from './features/envios/EnvioDetallePage'
 import { EnvioFormPage } from './features/envios/EnvioFormPage'
 import { EnviosPage } from './features/envios/EnviosPage'
@@ -47,6 +48,7 @@ function App() {
               <Route path="envios/nuevo" element={<EnvioFormPage />} />
               <Route path="envios/:id" element={<EnvioDetallePage />} />
               <Route path="reportes" element={<ReportesPage />} />
+              <Route path="configuracion" element={<ConfiguracionPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

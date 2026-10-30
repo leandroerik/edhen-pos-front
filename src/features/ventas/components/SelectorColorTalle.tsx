@@ -18,6 +18,7 @@ export interface SelectorColorTalleHandle {
 
 interface SelectorColorTalleProps {
   variantes: VarianteParaSelector[]
+  permitirSinStock?: boolean
   onConfirmar: (seleccion: Array<{ variante: VarianteParaSelector; cantidad: number }>) => void
 }
 
@@ -42,7 +43,7 @@ interface SelectorColorTalleProps {
 //   Enter confirmar y agregar al carrito
 //   Esc   cancelar / cerrar
 export const SelectorColorTalle = forwardRef<SelectorColorTalleHandle, SelectorColorTalleProps>(
-  function SelectorColorTalle({ variantes, onConfirmar }, ref) {
+  function SelectorColorTalle({ variantes, permitirSinStock, onConfirmar }, ref) {
     const colores = [...new Map(variantes.map((v) => [v.color.id, v.color])).values()]
 
     const [colorSeleccionadoId, setColorSeleccionadoId] = useState<number | null>(
@@ -109,8 +110,8 @@ export const SelectorColorTalle = forwardRef<SelectorColorTalleHandle, SelectorC
         const idx = num - 1
         if (idx < variantesDelColor.length) {
           const v = variantesDelColor[idx]
-          const disponible = v.stock - v.stockReservado
-          setCantidadesDraft((actual) => ({ ...actual, [v.id]: Math.min(num, disponible) }))
+          const tope = permitirSinStock ? Number.MAX_SAFE_INTEGER : v.stock - v.stockReservado
+          setCantidadesDraft((actual) => ({ ...actual, [v.id]: Math.min(num, tope) }))
         }
         return
       }
@@ -177,6 +178,7 @@ export const SelectorColorTalle = forwardRef<SelectorColorTalleHandle, SelectorC
             {variantesDelColor.map((variante, idx) => {
               const disponible = variante.stock - variante.stockReservado
               const cantidad = cantidadesDraft[variante.id] ?? 0
+              const tope = permitirSinStock ? Number.MAX_SAFE_INTEGER : disponible
               return (
                 <div key={variante.id} className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-gray-700">
@@ -190,18 +192,18 @@ export const SelectorColorTalle = forwardRef<SelectorColorTalleHandle, SelectorC
                   <span className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => cambiarCantidad(variante.id, -1, disponible)}
+                      onClick={() => cambiarCantidad(variante.id, -1, tope)}
                       disabled={cantidad <= 0}
-                      className="h-5 w-5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="h-7 w-7 rounded-md border border-gray-300 text-sm leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       −
                     </button>
-                    <span className="w-4 text-center text-gray-900">{cantidad}</span>
+                    <span className="w-5 text-center text-gray-900">{cantidad}</span>
                     <button
                       type="button"
-                      onClick={() => cambiarCantidad(variante.id, 1, disponible)}
-                      disabled={cantidad >= disponible}
-                      className="h-5 w-5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => cambiarCantidad(variante.id, 1, tope)}
+                      disabled={cantidad >= tope}
+                      className="h-7 w-7 rounded-md border border-gray-300 text-sm leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       +
                     </button>

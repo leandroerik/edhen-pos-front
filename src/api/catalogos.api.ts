@@ -78,6 +78,10 @@ export async function crearColor(input: ColorInput): Promise<Color> {
   return res.data
 }
 
+export async function eliminarColor(id: number): Promise<void> {
+  await apiClient.delete(`/api/colores/${id}`)
+}
+
 export interface TallaInput {
   nombre: string
   tipo: TallaTipo
@@ -86,4 +90,8 @@ export interface TallaInput {
 export async function crearTalla(input: TallaInput): Promise<Talla> {
   const res = await apiClient.post<Talla>('/api/tallas', input)
   return res.data
+}
+
+export async function eliminarTalla(id: number): Promise<void> {
+  await apiClient.delete(`/api/tallas/${id}`)
 }

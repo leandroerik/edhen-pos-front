@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { crearCliente, editarCliente, obtenerCliente, type ClienteInput } from '../../api/clientes.api'
+import { PageSkeleton } from '../../shared/components/Skeleton'
 import { DireccionesCliente } from './components/DireccionesCliente'
 import type { TipoCliente } from '../../types/cliente'
 
@@ -72,7 +73,7 @@ export function ClienteFormPage() {
   }
 
   if (cargando) {
-    return <p className="text-sm text-gray-500">Cargando...</p>
+    return <PageSkeleton />
   }
 
   return (

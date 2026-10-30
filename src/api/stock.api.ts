@@ -35,6 +35,25 @@ export async function ajustarStock(input: AjusteStockInput): Promise<void> {
   })
 }
 
+export interface AjusteStockLoteInput {
+  tipo: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO'
+  motivo?: string
+  items: Array<{ varianteId: number; cantidad: number }>
+}
+
+/**
+ * Ajuste masivo de varias variantes en una sola transacción (recepción por grilla).
+ * Es todo-o-nada en el backend: si una celda falla, no se aplica ninguna.
+ */
+export async function ajustarStockLote(input: AjusteStockLoteInput): Promise<MovimientoStock[]> {
+  const res = await apiClient.post<MovimientoStock[]>('/api/stock/ajuste-lote', {
+    tipo: input.tipo,
+    motivo: input.motivo?.trim() || undefined,
+    items: input.items.map((i) => ({ varianteId: i.varianteId, cantidad: i.cantidad })),
+  })
+  return res.data
+}
+
 export async function listarMovimientos(varianteId: number): Promise<MovimientoStock[]> {
   const res = await apiClient.get<MovimientoStock[]>(`/api/stock/${varianteId}/movimientos`)
   return res.data

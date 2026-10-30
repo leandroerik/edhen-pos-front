@@ -21,6 +21,7 @@ export interface CrearVentaInput {
   pagos: PagoInput[]
   descuentoTotal?: number
   observaciones?: string
+  permitirStockNegativo?: boolean
 }
 
 export async function crearVenta(input: CrearVentaInput): Promise<Venta> {
@@ -41,6 +42,7 @@ function construirPayload(input: CrearVentaInput) {
     items: input.items,
     pagos: input.pagos,
     observaciones: input.observaciones,
+    permitirStockNegativo: input.permitirStockNegativo ?? false,
   }
 }
 

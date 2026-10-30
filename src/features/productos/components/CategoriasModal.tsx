@@ -8,6 +8,7 @@ import {
   listarCategorias,
 } from '../../../api/catalogos.api'
 import { ConfirmModal } from '../../../shared/components/ConfirmModal'
+import { SkeletonRow } from '../../../shared/components/Skeleton'
 import type { Categoria } from '../../../types/categoria'
 
 interface CategoriasModalProps {
@@ -242,9 +243,7 @@ export function CategoriasModal({ abierto, onCerrar, onActualizado }: Categorias
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {cargando ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">Cargando...</td>
-                  </tr>
+                  <SkeletonRow colSpan={4} rows={4} />
                 ) : categorias.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">No hay categorías.</td>
